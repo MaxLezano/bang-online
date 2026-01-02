@@ -37,6 +37,10 @@ i18n
                     start_match: "START MATCH",
                     loading: "LOADING",
                     waiting_for_others: "Waiting for other legends...",
+                    add_bot: "ADD BOT",
+                    remove_bot: "REMOVE BOT",
+                    bot_unit: "BOT UNIT",
+                    ai_controlled: "AI Controlled",
 
                     // Roles
                     role_admin: "Sheriff",
@@ -53,6 +57,7 @@ i18n
                     role_renegade_goal: "Be the last one standing.",
                     role_card: "YOUR ROLE",
                     accept_mission: "ACCEPT MISSION",
+                    hover_to_reveal: "Hover to Reveal Mission",
 
                     // UI / HUD
                     hp: "HP",
@@ -181,6 +186,10 @@ i18n
                     start_match: "INICIAR PARTIDA",
                     loading: "CARGANDO",
                     waiting_for_others: "Esperando otras leyendas...",
+                    add_bot: "AÑADIR BOT",
+                    remove_bot: "ELIMINAR BOT",
+                    bot_unit: "UNIDAD ROBOT",
+                    ai_controlled: "Controlado por IA",
 
                     // Roles
                     role_admin: "Sheriff",
@@ -197,6 +206,7 @@ i18n
                     role_renegade_goal: "Sé el último en pie.",
                     role_card: "TU ROL",
                     accept_mission: "ACEPTAR MISIÓN",
+                    hover_to_reveal: "Pasa el cursor para revelar misión",
 
                     // UI / HUD
                     hp: "PV",

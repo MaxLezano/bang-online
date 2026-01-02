@@ -293,7 +293,7 @@ export const GameBoard: React.FC = () => {
 
                         {/* Hint Text */}
                         <div className="mt-6 text-gray-500 text-sm uppercase tracking-widest animate-pulse group-hover:opacity-0 transition-opacity duration-300">
-                            Hover to Reveal Mission
+                            {t('hover_to_reveal')}
                         </div>
                     </div>
                 </div>

@@ -150,7 +150,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ onStartGame, onBack })
                 </div>
 
                 {/* Participants Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-2 custom-scrollbar">
                     {participants.map((type, index) => (
                         <div
                             key={index}
@@ -176,10 +176,10 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ onStartGame, onBack })
                                 <div>
                                     <div className={`font-bold uppercase tracking-wider ${type === 'ME' ? 'text-amber-400' : 'text-stone-400'
                                         }`}>
-                                        {type === 'ME' ? name : 'Bot Unit'}
+                                        {type === 'ME' ? name : t('bot_unit')}
                                     </div>
                                     <div className="text-xs text-stone-500 font-serif italic">
-                                        {type === 'ME' ? t('role_admin') : 'AI Controlled'}
+                                        {type === 'ME' ? t('role_admin') : t('ai_controlled')}
                                     </div>
                                 </div>
                             </div>
