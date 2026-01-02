@@ -301,25 +301,25 @@ export const GameBoard: React.FC = () => {
         }
 
         return (
-            <div className="w-full h-full flex items-center justify-center bg-gray-900 text-white relative overflow-hidden">
+            <div className="w-full h-full flex flex-col items-center justify-start bg-gray-900 text-white relative overflow-y-auto overflow-x-hidden">
                 {/* Background ambience */}
                 <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
 
-                <div className="z-10 flex flex-col items-center gap-12 animate-fade-in">
+                <div className="z-10 flex flex-col items-center gap-8 md:gap-12 animate-fade-in my-auto py-10 w-full px-4">
                     <div className="text-center">
-                        <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 tracking-tighter drop-shadow-[0_2px_10px_rgba(251,191,36,0.5)]">
+                        <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 tracking-tighter drop-shadow-[0_2px_10px_rgba(251,191,36,0.5)]">
                             WANTED
                         </h1>
-                        <p className="text-xl text-amber-100/80 font-bold uppercase tracking-[0.5em] mt-2">Choose Your Legend</p>
+                        <p className="text-base md:text-xl text-amber-100/80 font-bold uppercase tracking-[0.5em] mt-2">Choose Your Legend</p>
                     </div>
 
                     {pending ? (
-                        <div className="flex gap-10">
+                        <div className="flex flex-wrap justify-center gap-6 md:gap-10 w-full max-w-[90rem]">
                             {pending.map((char) => (
                                 <div
                                     key={char.name}
                                     onClick={() => handleSelectChar(char.name)}
-                                    className="relative overflow-hidden w-[22.25rem] h-[34rem] bg-gray-900 rounded-xl shadow-2xl transition-all duration-500 group cursor-pointer ring-1 ring-black/20 hover:shadow-[0_0_50px_rgba(245,158,11,0.6)] hover:-translate-y-2"
+                                    className="relative overflow-hidden w-72 h-[30rem] md:w-[22.25rem] md:h-[34rem] bg-gray-900 rounded-xl shadow-2xl transition-all duration-500 group cursor-pointer ring-1 ring-black/20 hover:shadow-[0_0_50px_rgba(245,158,11,0.6)] hover:-translate-y-2 shrink-0"
                                 >
                                     {/* Full Height Character Art - Idle: contain/cover to show borders. Hover: Scale up to remove borders. */}
                                     <div className="absolute inset-0 z-0">
@@ -342,7 +342,7 @@ export const GameBoard: React.FC = () => {
                                         {/* Name & HP - Absolute Positioned for perfect alignment */}
                                         <div className="absolute left-0 right-0 mx-auto px-5 transition-all duration-500 ease-out bottom-9 group-hover:bottom-56">
                                             <div className="text-center group-hover:mb-2">
-                                                <h2 className="text-3xl font-black text-white uppercase tracking-tighter drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] text-shadow-lg font-serif">{char.name}</h2>
+                                                <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] text-shadow-lg font-serif">{char.name}</h2>
                                                 <div className="flex justify-center items-center gap-2 mt-2 opacity-100 transition-all duration-500">
                                                     <div className="flex gap-1 bg-black/40 px-2 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-lg group-hover:bg-black/60">
                                                         {Array.from({ length: 4 + char.hpMod }).map((_, i) => (
@@ -383,7 +383,7 @@ export const GameBoard: React.FC = () => {
         <div className="w-full h-full relative bg-[#1a1a1a] flex items-center justify-center">
             {/* Poker Table Background (Shrunk to give room) */}
             <div
-                className="absolute w-[80%] h-[60%] bg-[#0f0f0f] rounded-[150px] border-[6px] border-gray-800 shadow-[0_0_80px_rgba(0,0,0,0.9)] z-0 top-[20%] cursor-crosshair active:scale-[0.99] transition-transform"
+                className="absolute w-[95%] h-[50%] md:w-[80%] md:h-[60%] bg-[#0f0f0f] rounded-[50px] md:rounded-[150px] border-[6px] border-gray-800 shadow-[0_0_80px_rgba(0,0,0,0.9)] z-0 top-[15%] md:top-[20%] cursor-crosshair active:scale-[0.99] transition-transform"
                 onClick={handleGlobalBoardClick}
                 onDragOver={handleDragOver}
                 onDrop={handleDropOnTable}
@@ -393,9 +393,9 @@ export const GameBoard: React.FC = () => {
                 </div>
             </div>
 
-            {/* --- CENTER TABLE (Deck, Discard) - Z-Index boosted to 100 to show tooltips above everything --- */}
+            {/* --- CENTER TABLE (Deck, Discard) - Adjusted to avoid overlaps --- */}
             <div
-                className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none z-[80] transform scale-60 md:scale-100 transition-transform"
             >
                 {/* SYSTEM STATUS & TURN CONTROLS */}
                 <div className="mb-4 flex flex-col items-center gap-2 pointer-events-auto z-[70]">
@@ -426,8 +426,8 @@ export const GameBoard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Top Row: Deck & Discard */}
-                <div className="flex gap-12 mb-8 pointer-events-auto relative z-[75]">
+                {/* Top Row: Deck & Discard - Scaled down on mobile, full size on hover */}
+                <div className="flex gap-4 md:gap-12 mb-8 pointer-events-auto relative z-[75] transform scale-75 origin-top md:scale-100 md:origin-center hover:scale-100 transition-transform duration-300 ease-out hover:z-[100]">
                     {/* Deck */}
                     <div
                         onClick={handleDeckClick}
@@ -603,7 +603,7 @@ export const GameBoard: React.FC = () => {
 
 
             {/* Opponents Grid (Top Row) */}
-            <div className="absolute top-6 left-0 right-0 flex justify-center gap-16 px-4 z-[90]">
+            <div className="absolute top-2 md:top-6 left-0 right-0 flex justify-center gap-4 md:gap-16 px-4 z-[90] transform scale-60 origin-top md:scale-100 transition-transform">
                 {opponents.map((opp) => (
                     <div
                         key={opp.id}
@@ -709,7 +709,7 @@ export const GameBoard: React.FC = () => {
 
             {/* --- PLAYER DASHBOARD (Bottom Left) --- */}
             <div
-                className="absolute bottom-6 left-6 z-[60] flex items-end gap-6 pointer-events-auto"
+                className="absolute bottom-2 left-2 md:bottom-6 md:left-6 z-[60] flex items-end gap-6 pointer-events-auto transform scale-75 origin-bottom-left md:scale-100 transition-transform"
                 onDragOver={handleDragOver}
                 onDrop={handleDropOnSelf}
             >
@@ -837,7 +837,7 @@ export const GameBoard: React.FC = () => {
                 </div>
 
                 {/* 2. HAND CARDS (Fan - "Pop Up" Style - SMOOTH STRAIGHTEN) */}
-                <div className="relative h-[600px] flex items-end w-full pointer-events-none">
+                <div className="absolute bottom-0 left-0 right-0 h-[300px] md:h-auto md:relative md:h-[600px] flex items-end w-full pointer-events-none z-[100]">
                     {/* DYNAMIC SPACING Hand Container */}
                     {(() => {
                         const count = myPlayer.hand.length;
