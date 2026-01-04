@@ -65,8 +65,8 @@ const generateDeck = (): Card[] => {
     // Panic!
     add(4, { nameKey: 'card_panic_name', descKey: 'card_panic_desc', name: 'Panic!', type: 'Action', effectType: 'steal', range: 1 }, ['hearts', 'diamonds', 'hearts'], [11, 12, 14, 8]);
 
-    // Cat Balou
-    add(4, { nameKey: 'card_cat_balou_name', descKey: 'card_cat_balou_desc', name: 'Cat Balou', type: 'Action', effectType: 'discard' }, ['hearts', 'diamonds'], [13, 9, 10, 11]);
+    // Lightning (formerly Cat Balou)
+    add(4, { nameKey: 'card_lightning_name', descKey: 'card_cat_balou_desc', name: 'Lightning', type: 'Action', effectType: 'discard' }, ['hearts', 'diamonds'], [13, 9, 10, 11]);
 
     // Stagecoach
     add(2, { nameKey: 'card_stagecoach_name', descKey: 'card_stagecoach_desc', name: 'Stagecoach', type: 'Action', effectType: 'draw', effectValue: 2 }, ['spades'], [9, 9]);
@@ -102,7 +102,7 @@ const generateDeck = (): Card[] => {
     add(2, { nameKey: 'card_mustang_name', descKey: 'card_mustang_desc', name: 'Mustang', type: 'Equipment', subType: 'Utility', effectType: 'mustang', effectValue: 1 }, ['hearts'], [8, 9]);
     add(1, { nameKey: 'card_scope_name', descKey: 'card_scope_desc', name: 'Scope', type: 'Equipment', subType: 'Utility', effectType: 'scope', effectValue: 1 }, ['spades'], [14]);
     add(1, { nameKey: 'card_scope_name', descKey: 'card_scope_desc', name: 'Scope', type: 'Equipment', subType: 'Utility', effectType: 'scope', effectValue: 1 }, ['spades'], [14]);
-    add(2, { nameKey: 'card_barrel_name', descKey: 'card_barrel_desc', name: 'Barrel', type: 'Action', subType: 'Defense', effectType: 'missed' }, ['spades'], [12, 13]);
+    add(2, { nameKey: 'card_barrel_name', descKey: 'card_barrel_desc', name: 'Barrel', type: 'Equipment', subType: 'Defense', effectType: 'equip' }, ['spades'], [12, 13]);
     // Alijo (Hideout) - Custom Card
     add(2, { nameKey: 'card_alijo_name', descKey: 'card_alijo_desc', name: 'Alijo', type: 'Equipment', subType: 'Utility', effectType: 'hideout' }, ['clubs', 'spades'], [13, 9]);
     add(3, { nameKey: 'card_jail_name', descKey: 'card_jail_desc', name: 'Jail', type: 'Status', effectType: 'jail' }, ['spades', 'hearts'], [10, 11, 4]);
@@ -181,7 +181,8 @@ export function handleDamage(
     let newDiscard = [...discardPile];
     let newLogs = [...logs];
 
-    let target = newPlayers[targetIndex];
+    // CRITICAL FIX: Spread object to avoid mutating state reference (Strict Mode Double Invocation Issue)
+    let target = { ...newPlayers[targetIndex] };
     // prevHp removed (unused)
 
     // 1. Apply Damage
@@ -236,55 +237,82 @@ export function handleDamage(
 
     // 3. Death Check
     if (target.hp <= 0) {
-        target.isDead = true;
-        target.hp = 0;
-        newLogs.push(`💀 ${target.name} ELIMINATED! (${target.role})`);
-
-        // Vulture Sam Check
-        const vultureIndex = newPlayers.findIndex(p => p.character === 'Vulture Sam' && !p.isDead);
-        const victimCards = [...target.hand, ...target.table];
-        target.hand = [];
-        target.table = [];
-
-        if (vultureIndex !== -1) {
-            // Sam takes cards
-            newPlayers[vultureIndex].hand.push(...victimCards);
-            newLogs.push(`🦅 Vulture Sam scavenges ${victimCards.length} cards from ${target.name}.`);
-        } else {
-            // Default: Discard all
-            newDiscard.push(...victimCards);
-        }
-
-        // Kill Rewards / Penalties (Only if Attacker exists)
-        if (attackerIndex !== null && attackerIndex !== targetIndex) {
-            const attacker = newPlayers[attackerIndex]; // Re-fetch to be safe if modified by El Gringo
-
-            // Reward: Any player killing an Outlaw -> Draw 3
-            if (target.role === 'Outlaw') {
-                newLogs.push(`💰 ${attacker.name} collects bounty for Outlaw: Draws 3 cards!`);
-                // Draw 3
-                for (let i = 0; i < 3; i++) {
-                    const check = checkDraw(newDeck, newDiscard);
-                    newDeck = check.deck;
-                    newDiscard = check.discardPile;
-                    attacker.hand.push(check.drawnCard);
-                }
-            }
-
-            // Penalty: Sheriff kills Deputy -> Discard All
-            if (attacker.role === 'Sheriff' && target.role === 'Deputy') {
-                newLogs.push(`⚠️ SHERIFF KILLED A DEPUTY! Sheriff loses all cards!`);
-                const penaltyCards = [...attacker.hand, ...attacker.table];
-                attacker.hand = [];
-                attacker.table = [];
-                newDiscard.push(...penaltyCards);
-            }
-
-            newPlayers[attackerIndex] = attacker;
-        }
+        const deathRes = handleDeath(
+            { ...state, players: newPlayers, deck: newDeck, discardPile: newDiscard, logs: newLogs },
+            targetIndex,
+            attackerIndex
+        );
+        newPlayers = deathRes.players;
+        newDeck = deathRes.deck;
+        newDiscard = deathRes.discardPile;
+        newLogs = deathRes.logs;
+    } else {
+        // Only update the target if they survived (otherwise handleDeath updated them correctly)
+        newPlayers[targetIndex] = target;
     }
 
-    newPlayers[targetIndex] = target;
+    return { players: newPlayers, deck: newDeck, discardPile: newDiscard, logs: newLogs };
+}
+
+// Extracted Death Logic to ensure Vulture Sam works for ALL deaths (Dynamite, etc)
+export function handleDeath(
+    state: Partial<GameState> & { players: Player[], deck: Card[], discardPile: Card[], logs: string[] },
+    victimIndex: number,
+    killerIndex: number | null
+): { players: Player[], deck: Card[], discardPile: Card[], logs: string[] } {
+    let newPlayers = [...state.players];
+    let newDeck = [...state.deck];
+    let newDiscard = [...state.discardPile];
+    let newLogs = [...state.logs];
+
+    const victim = newPlayers[victimIndex];
+    victim.isDead = true;
+    victim.hp = 0;
+    newLogs.push(`💀 ${victim.name} ELIMINATED! (${victim.role})`);
+
+    // Vulture Sam Check
+    const vultureIndex = newPlayers.findIndex(p => p.character === 'Vulture Sam' && !p.isDead);
+    const victimCards = [...victim.hand, ...victim.table];
+    victim.hand = [];
+    victim.table = [];
+
+    if (vultureIndex !== -1) {
+        // Sam takes cards
+        newPlayers[vultureIndex].hand.push(...victimCards);
+        newLogs.push(`🦅 Vulture Sam scavenges ${victimCards.length} cards from ${victim.name}.`);
+    } else {
+        // Default: Discard all
+        newDiscard.push(...victimCards);
+    }
+
+    // Bonuses / Penalties
+    if (killerIndex !== null && killerIndex !== undefined && killerIndex !== victimIndex) {
+        const killer = newPlayers[killerIndex];
+
+        // Reward: Any player killing an Outlaw -> Draw 3
+        if (victim.role === 'Outlaw') {
+            newLogs.push(`💰 ${killer.name} collects bounty for Outlaw: Draws 3 cards!`);
+            for (let i = 0; i < 3; i++) {
+                const check = checkDraw(newDeck, newDiscard);
+                newDeck = check.deck;
+                newDiscard = check.discardPile;
+                killer.hand.push(check.drawnCard);
+            }
+        }
+
+        // Penalty: Sheriff kills Deputy -> Discard All
+        if (killer.role === 'Sheriff' && victim.role === 'Deputy') {
+            newLogs.push(`⚠️ SHERIFF KILLED A DEPUTY! Sheriff loses all cards!`);
+            const penaltyCards = [...killer.hand, ...killer.table];
+            killer.hand = [];
+            killer.table = [];
+            newDiscard.push(...penaltyCards);
+        }
+
+        newPlayers[killerIndex] = killer;
+    }
+
+    newPlayers[victimIndex] = victim;
     return { players: newPlayers, deck: newDeck, discardPile: newDiscard, logs: newLogs };
 }
 
@@ -486,7 +514,12 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     nextIndex = (nextIndex + 1) % state.players.length;
                     loop++;
                 }
-                return { ...state, turnIndex: nextIndex };
+                return {
+                    ...state,
+                    turnIndex: nextIndex,
+                    hasPlayedBang: false,
+                    turnPlayedCards: []
+                };
             }
 
             let newDeck = [...state.deck];
@@ -525,8 +558,11 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     currentPlayer.table.splice(dynamiteIdx, 1);
 
                     if (currentPlayer.hp <= 0) {
-                        currentPlayer.isDead = true;
-                        logs.push(`${currentPlayer.name} died to Dynamite!`);
+                        const deathRes = handleDeath({ ...state, players: newPlayers, deck: newDeck, discardPile: newDiscard, logs }, currentPlayerIndex, null);
+                        newPlayers = deathRes.players;
+                        newDeck = deathRes.deck;
+                        newDiscard = deathRes.discardPile;
+                        logs = deathRes.logs;
                     }
                 } else {
                     logs.push(`Dynamite passed to next player.`);
@@ -548,7 +584,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     discardPile: newDiscard,
                     logs,
                     turnIndex: (state.turnIndex + 1) % state.players.length,
-                    latestDrawCheck: latestDrawCheck || state.latestDrawCheck
+                    latestDrawCheck: latestDrawCheck || state.latestDrawCheck,
+                    hasPlayedBang: false,
+                    turnPlayedCards: []
                 };
             }
 
@@ -586,7 +624,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         discardPile: newDiscard,
                         logs,
                         turnIndex: (state.turnIndex + 1) % state.players.length,
-                        latestDrawCheck
+                        latestDrawCheck,
+                        hasPlayedBang: false,
+                        turnPlayedCards: []
                     };
                 }
             }
@@ -621,12 +661,79 @@ export function gameReducer(state: GameState, action: Action): GameState {
         }
 
         case 'SELECT_CARD':
+            // Kit Carlson Phase: Select 1 card to put back on deck
+            if (state.currentPhase === 'kit_carlson_discard') {
+                const player = state.players[state.turnIndex];
+                const card = player.hand.find(c => c.id === action.cardId);
+
+                if (!card) return state;
+
+                // Remove card from hand
+                const newHand = player.hand.filter(c => c.id !== card.id);
+                // Put card back on TOP of deck
+                const newDeck = [card, ...state.deck];
+
+                const newPlayers = [...state.players];
+                newPlayers[state.turnIndex] = { ...player, hand: newHand };
+
+                return {
+                    ...state,
+                    players: newPlayers,
+                    deck: newDeck,
+                    currentPhase: 'play', // Proceed to play phase
+                    selectedCardId: null,
+                    logs: [...state.logs, `${player.name} put a card back on the deck`]
+                };
+            }
+
+            if (state.currentPhase === 'sid_discard') {
+                const player = state.players[state.turnIndex];
+                const card = player.hand.find(c => c.id === action.cardId);
+                if (!card) return state;
+
+                // Discard it
+                const newHand = player.hand.filter(c => c.id !== card.id);
+                const newDiscard = [...state.discardPile, card];
+                const pending = [...(state.abilityPendingDiscords || []), card.id];
+
+                // Update player
+                const newPlayers = [...state.players];
+                newPlayers[state.turnIndex] = { ...player, hand: newHand };
+
+                if (pending.length >= 2) {
+                    // Effect Trigger
+                    const newHp = Math.min(newPlayers[state.turnIndex].maxHp, newPlayers[state.turnIndex].hp + 1);
+                    newPlayers[state.turnIndex].hp = newHp;
+
+                    return {
+                        ...state,
+                        players: newPlayers,
+                        discardPile: newDiscard,
+                        currentPhase: 'play',
+                        abilityPendingDiscords: undefined,
+                        selectedCardId: null,
+                        logs: [...state.logs, `${player.name} discards 2 cards to Heal 1 HP! (HP: ${newHp})`]
+                    };
+                }
+
+                return {
+                    ...state,
+                    players: newPlayers,
+                    discardPile: newDiscard,
+                    abilityPendingDiscords: pending,
+                    selectedCardId: null,
+                    logs: [...state.logs, `${player.name} discards ${card.name} (1/2)`]
+                };
+            }
             return { ...state, selectedCardId: action.cardId };
 
         case 'PLAY_CARD': {
             const playerIndex = state.turnIndex;
             const player = state.players[playerIndex];
             const card = player.hand.find(c => c.id === action.cardId);
+
+            // CRITICAL FIX: Prevent playing cards if game is waiting for response (e.g. double click bang)
+            if (state.currentPhase !== 'play') return state;
 
             if (!card) return state;
 
@@ -684,21 +791,34 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     }
                     newPlayers[playerIndex].table.push(card);
                     newPlayers[playerIndex].weaponRange = card.range || 1;
-                    newLog += ` equipped ${card.name}`;
                 } else {
-                    // DUPLICATE CHECK: Prevent equipping same item twice
-                    if (newPlayers[playerIndex].table.some(c => c.name === card.name)) {
-                        return { ...state, logs: [...state.logs, `⚠️ You already have ${card.name} equipped!`], selectedCardId: null };
-                    }
+                    // Gear Logic (Limit 2)
+                    const existingGears = newPlayers[playerIndex].table.filter(c => c.subType !== 'Weapon');
 
-                    newPlayers[playerIndex].table.push(card);
-                    if (card.effectType === 'scope') newPlayers[playerIndex].viewDistance += (card.effectValue || 1);
-                    if (card.effectType === 'mustang') newPlayers[playerIndex].distanceMod += (card.effectValue || 1);
-                    newLog += ` installed ${card.name}`;
+                    if (existingGears.length >= 2) {
+                        if (action.replacedCardId) {
+                            const replaceIdx = newPlayers[playerIndex].table.findIndex(c => c.id === action.replacedCardId);
+                            if (replaceIdx !== -1) {
+                                newDiscard.push(newPlayers[playerIndex].table[replaceIdx]);
+                                newPlayers[playerIndex].table.splice(replaceIdx, 1);
+                                newPlayers[playerIndex].table.push(card);
+                            } else {
+                                return { ...state, logs: [...state.logs, "Invalid replacement card selected."], selectedCardId: null };
+                            }
+                        } else {
+                            return { ...state, logs: [...state.logs, "Gear slots full! Choose a card to replace."], selectedCardId: null };
+                        }
+                    } else {
+                        // Check for duplicates
+                        if (newPlayers[playerIndex].table.some(c => c.name === card.name)) {
+                            return { ...state, logs: [...state.logs, `You already have ${card.name} equipped!`], selectedCardId: null };
+                        }
+                        newPlayers[playerIndex].table.push(card);
+                    }
                 }
+                newLog += ` equipped ${card.name}`;
 
                 newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
-                newDiscard.push(card); // Discard the played card
 
                 return {
                     ...state,
@@ -808,10 +928,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     const isWillyTheKid = player.character === 'Willy the Kid';
 
                     if (!hasVolcanic && !isWillyTheKid && state.hasPlayedBang && card.effectType === 'bang') {
-                        return { ...state, logs: [...state.logs, `⚠️ You can only play 1 BANG! per turn.`] };
-                    }
-                    if (!hasVolcanic && !isWillyTheKid && state.hasPlayedBang && card.effectType === 'bang') {
-                        return { ...state, logs: [...state.logs, `⚠️ You can only play 1 BANG! per turn.`] };
+                        // Feedback handled in UI, but return state unchanged here
+                        return state;
                     }
 
                     // CHECK ALIJO (Hideout) - Custom Card
@@ -825,65 +943,19 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         newLog += ` | 🏚️ ${target.name}'s Alijo grants a card!`;
                     }
 
-                    let isMissed = false;
 
-                    // 1. Check Jourdonnais (Barrel Effect Ability)
-                    const isJourdonnais = target.character === 'Jourdonnais';
 
-                    if (isJourdonnais) {
-                        const check = checkDraw(updatedDeck, newDiscard);
-                        updatedDeck = check.deck;
-                        newDiscard = check.discardPile;
-                        const drawnCard = check.drawnCard;
+                    // 1. Check Auto-Miss Logic (e.g. Calamity Janet/Barrel Auto?) - NO, INTERACTIVE NOW
+                    // PAUSE GAME SET TO RESPONDING PHASE
 
-                        newLog += ` | ${target.name} checks Barrel: ${drawnCard.value} of ${drawnCard.suit}`;
-                        if (drawnCard.suit === 'hearts') {
-                            isMissed = true;
-                            newLog += " (AVOIDED!)";
-                        }
 
-                        latestDrawCheck = {
-                            card: drawnCard,
-                            reason: 'barrel',
-                            success: isMissed,
-                            playerId: target.id,
-                            timestamp: Date.now()
-                        };
-                    }
-
-                    let finalLogs = [...state.logs, newLog];
-
-                    // 2. Play Card / Discard It
-                    // Use helper variable to handle hand filtering properly
+                    // Discard the played BANG logic remains (move this UP or keep here)
                     const cardIdx = newPlayers[playerIndex].hand.findIndex(c => c.id === card.id);
                     if (cardIdx !== -1) newPlayers[playerIndex].hand.splice(cardIdx, 1);
                     newDiscard.push(card);
 
-                    if (!isMissed) {
-                        const missIndex = target.hand.findIndex(c => c.effectType === 'missed');
-                        if (missIndex !== -1) {
-                            // Blocked by Missed!
-                            const shieldCard = target.hand[missIndex];
-                            newPlayers[targetIndex].hand.splice(missIndex, 1);
-                            finalLogs.push(` -> BLOCKED by ${target.name}'s Missed!`);
-                            newDiscard.push(shieldCard);
-                        } else {
-                            // Damage Handling via Helper
-                            const damageRes = handleDamage(
-                                { ...state, players: newPlayers },
-                                targetIndex,
-                                1,
-                                playerIndex,
-                                updatedDeck,
-                                newDiscard,
-                                finalLogs
-                            );
-                            newPlayers = damageRes.players;
-                            updatedDeck = damageRes.deck;
-                            newDiscard = damageRes.discardPile;
-                            finalLogs = damageRes.logs;
-                        }
-                    }
+                    // LOG & CHANGE PHASE
+                    let finalLogs = [...state.logs, newLog, `Waiting for ${target.name} to respond...`];
 
                     return {
                         ...state,
@@ -892,13 +964,19 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         discardPile: newDiscard,
                         logs: finalLogs,
                         selectedCardId: null,
-                        currentPhase: state.currentPhase,
+                        currentPhase: 'responding', // NEW PHASE
+                        pendingAction: {
+                            type: 'counter',
+                            sourceId: player.id,
+                            targetId: target.id,
+                            cardId: card.id,
+                            barrelUsed: false
+                        },
                         turnIndex: state.turnIndex,
                         hasPlayedBang: true,
                         turnPlayedCards: [...(state.turnPlayedCards || []), card],
                         latestDrawCheck: latestDrawCheck || state.latestDrawCheck,
-                        gameOver: state.gameOver,
-                        winner: state.winner
+                        responseQueue: [] // CRITICAL FIX: Ensure no stale queue exists
                     };
                 }
 
@@ -916,54 +994,54 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     updatedDeck = updatedDeck.slice(count);
                     newPlayers[playerIndex].hand.push(...drawn);
                     newLog += ` drew ${count} cards`;
-                } else if (card.effectType === 'damage_all') {
-                    // Gatling
-                    let currentLogs = [...state.logs, newLog];
-                    // We need to iterate carefully since handleDamage modifies logs
-                    // Logic: Gatling -> Each other player triggers Missed or Damage
-                    // We must do this sequentially to update message log correctly
+                } else if (card.effectType === 'damage_all' || card.effectType === 'indians') {
+                    // Gatling OR Indians -> QUEUE BASED INTERACTION 
+                    // This allows interactive defense (Barrel/Missed/Bang)
+                    const isIndians = card.effectType === 'indians';
 
-                    // Filter targets first
-                    const targets = newPlayers.map((p, i) => ({ idx: i, p })).filter(item => item.idx !== playerIndex && !item.p.isDead);
+                    // Identify Targets (All other living players)
+                    let targets: { targetId: string, sourceId: string, cardId: string, type: 'gatling' | 'indians' }[] = [];
 
-                    targets.forEach(({ idx }) => {
-                        let targetInstance = newPlayers[idx]; // Re-fetch in case of mutation (though mutation is inplace on array)
-                        const missIdx = targetInstance.hand.findIndex(c => c.effectType === 'missed');
-                        if (missIdx !== -1) {
-                            const used = targetInstance.hand[missIdx];
-                            targetInstance.hand.splice(missIdx, 1);
-                            newDiscard.push(used);
-                            currentLogs.push(` | ${targetInstance.name} Missed!`);
-                            newPlayers[idx] = targetInstance;
-                        } else {
-                            const damageRes = handleDamage(
-                                { ...state, players: newPlayers },
-                                idx,
-                                1,
-                                playerIndex,
-                                updatedDeck,
-                                newDiscard,
-                                currentLogs
-                            );
-                            newPlayers = damageRes.players;
-                            updatedDeck = damageRes.deck;
-                            newDiscard = damageRes.discardPile;
-                            currentLogs = damageRes.logs;
+                    const totalPlayers = newPlayers.length;
+                    for (let i = 1; i < totalPlayers; i++) {
+                        const idx = (playerIndex + i) % totalPlayers;
+                        if (!newPlayers[idx].isDead) {
+                            targets.push({
+                                targetId: newPlayers[idx].id,
+                                sourceId: player.id,
+                                cardId: card.id,
+                                type: isIndians ? 'indians' : 'gatling'
+                            });
                         }
-                    });
+                    }
 
-                    newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
-                    newDiscard.push(card);
+                    if (targets.length > 0) {
+                        const first = targets[0];
+                        const remaining = targets.slice(1);
 
-                    return {
-                        ...state,
-                        players: newPlayers,
-                        deck: updatedDeck,
-                        discardPile: newDiscard,
-                        logs: currentLogs,
-                        selectedCardId: null,
-                        turnPlayedCards: [...(state.turnPlayedCards || []), card]
-                    };
+                        newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
+                        newDiscard.push(card);
+
+                        return {
+                            ...state,
+                            players: newPlayers,
+                            deck: updatedDeck,
+                            discardPile: newDiscard,
+                            logs: [...state.logs, newLog], // Log the play
+                            selectedCardId: null,
+                            turnPlayedCards: [...(state.turnPlayedCards || []), card],
+                            currentPhase: 'responding',
+                            pendingAction: {
+                                type: isIndians ? 'indians' : 'bang', // Indians uses 'indians' (needs bang), Gatling uses 'bang' (needs Missed)
+                                sourceId: first.sourceId,
+                                targetId: first.targetId,
+                                cardId: first.cardId
+                            },
+                            responseQueue: remaining
+                        };
+                    } else {
+                        newLog += ` (No Targets)`;
+                    }
 
                 } else if (card.effectType === 'saloon') {
                     newPlayers.forEach(p => {
@@ -972,49 +1050,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         }
                     });
                     newLog += ` | All players healed!`;
-                } else if (card.effectType === 'indians') {
-                    let currentLogs = [...state.logs, newLog];
-                    const targets = newPlayers.map((p, i) => ({ idx: i, p })).filter(item => item.idx !== playerIndex && !item.p.isDead);
-                    targets.forEach(({ idx }) => {
-                        let targetInstance = newPlayers[idx];
-                        const bangIdx = targetInstance.hand.findIndex(c => c.effectType === 'bang');
-                        if (bangIdx !== -1) {
-                            const used = targetInstance.hand[bangIdx];
-                            targetInstance.hand.splice(bangIdx, 1);
-                            newDiscard.push(used);
-                            currentLogs.push(` | ${targetInstance.name} discarded Bang!`);
-                            newPlayers[idx] = targetInstance;
-                        } else {
-                            const damageRes = handleDamage(
-                                { ...state, players: newPlayers },
-                                idx,
-                                1,
-                                playerIndex,
-                                updatedDeck,
-                                newDiscard,
-                                currentLogs
-                            );
-                            newPlayers = damageRes.players;
-                            updatedDeck = damageRes.deck;
-                            newDiscard = damageRes.discardPile;
-                            currentLogs = damageRes.logs;
-                        }
-                    });
-
-                    newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
-                    newDiscard.push(card);
-
-                    return {
-                        ...state,
-                        players: newPlayers,
-                        deck: updatedDeck,
-                        discardPile: newDiscard,
-                        logs: currentLogs,
-                        selectedCardId: null,
-                        turnPlayedCards: [...(state.turnPlayedCards || []), card]
-                    };
-
-                } else if (card.effectType === 'store') {
+                } else if (card.effectType === 'general_store' || card.effectType === 'store') {
                     const aliveCount = newPlayers.filter(p => !p.isDead).length;
                     const drawn = updatedDeck.slice(0, aliveCount);
                     updatedDeck = updatedDeck.slice(aliveCount);
@@ -1050,7 +1086,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         const dist = calculateDistance(state.players, player.id, target.id, sorceScope + charScope, targetMustang + charMustang);
 
                         if (dist > 1) {
-                            return { ...state, logs: [...state.logs, `Target out of range for Panic! (Dist: ${dist})`], selectedCardId: null };
+                            return { ...state, logs: [...state.logs, `Target out of range for Panic!(Dist: ${dist})`], selectedCardId: null };
                         }
                     }
 
@@ -1069,7 +1105,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         newPlayers[targetIndex] = target;
                         if (card.effectType === 'steal') {
                             newPlayers[playerIndex].hand.push(stolenCard);
-                            newLog += ` stole a card from ${target.name}`;
+                            newLog += ` stole a card from ${target.name} `;
                         } else {
                             newDiscard.push(stolenCard);
                             newLog += ` forced ${target.name} to discard a card`;
@@ -1112,7 +1148,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                 ...state,
                 players: newPlayers,
                 discardPile: [...state.discardPile, discarded],
-                logs: [...state.logs, `${player.name} discarded ${discarded.name}`],
+                logs: [...state.logs, `${player.name} discarded ${discarded.name} `],
                 currentPhase: 'discard' as const,
             };
 
@@ -1149,7 +1185,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     ...newState,
                     turnIndex: nextIndex,
                     currentPhase: 'draw',
-                    logs: [...newState.logs, `--- Turn Ended (Discard Complete) ---`],
+                    logs: [...newState.logs, `-- - Turn Ended(Discard Complete)-- - `],
                 };
             }
 
@@ -1174,7 +1210,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
             const picker = { ...newPlayers[pickerIndex], hand: [...newPlayers[pickerIndex].hand, card] };
             newPlayers[pickerIndex] = picker;
 
-            let logs = [...state.logs, `${picker.name} took ${card.name}`];
+            let logs = [...state.logs, `${picker.name} took ${card.name} `];
 
             let nextStoreIndex: number | null = (pickerIndex + 1) % state.players.length;
             let loop = 0;
@@ -1243,7 +1279,178 @@ export function gameReducer(state: GameState, action: Action): GameState {
                 ...state,
                 turnIndex: nextIndex,
                 currentPhase: 'draw',
-                logs: [...state.logs, `--- Turn Ended ---`],
+                logs: [...state.logs, `-- - Turn Ended-- - `],
+            };
+        }
+
+        case 'USE_ABILITY': {
+            const userId = action.playerId;
+            const player = state.players.find(p => p.id === userId);
+            if (!player || state.turnIndex !== state.players.findIndex(p => p.id === userId)) {
+                return { ...state, logs: [...state.logs, "Not your turn!"] };
+            }
+
+            if (player.character === 'Sid Ketchum') {
+                if (player.hand.length < 2) {
+                    return { ...state, logs: [...state.logs, "Not enough cards!"] };
+                }
+                if (player.hp >= player.maxHp) {
+                    return { ...state, logs: [...state.logs, "Health full!"] };
+                }
+                return {
+                    ...state,
+                    currentPhase: 'sid_discard',
+                    abilityPendingDiscords: [],
+                    logs: [...state.logs, "Sid Ketchum: Select 2 cards to discard."]
+                };
+            }
+            // Pedro Ramirez logic could go here if phase is 'draw'
+
+            return { ...state, logs: [...state.logs, `Ability for ${player.character} not implemented yet.`] };
+        }
+
+        case 'RESPOND': {
+            if (state.currentPhase !== 'responding' || !state.pendingAction) return state;
+            const { sourceId, targetId, barrelUsed } = state.pendingAction;
+
+            // Validate Responder
+            // In a real multiplayer setting we would check action.playerId, for now assume handling logic
+            const targetIndex = state.players.findIndex(p => p.id === targetId);
+            const sourceIndex = state.players.findIndex(p => p.id === sourceId);
+            const target = state.players[targetIndex];
+
+            let newPlayers = [...state.players];
+            let newDiscard = [...state.discardPile];
+            let newDeck = [...state.deck];
+            let logs = [...state.logs];
+            let currentPhase: GameState['currentPhase'] = state.currentPhase;
+            let pendingAction: GameState['pendingAction'] = state.pendingAction;
+            let latestDrawCheck = state.latestDrawCheck;
+            let responseQueue = [...(state.responseQueue || [])];
+
+            if (action.responseType === 'card') {
+                const isIndians = pendingAction.type === 'indians';
+                const requiredEffect = isIndians ? 'bang' : 'missed';
+
+                // For Indians, Calamity Janet can play 'missed' as 'bang'
+                // For Bang/Gatling, Calamity Janet can play 'bang' as 'missed'
+                const cardIndex = target.hand.findIndex(c => c.id === action.cardId && (c.effectType === requiredEffect || (target.character === 'Calamity Janet' && (c.effectType === 'bang' || c.effectType === 'missed'))));
+
+                if (cardIndex !== -1) {
+                    const playedCard = target.hand[cardIndex];
+                    newPlayers[targetIndex] = {
+                        ...target,
+                        hand: target.hand.filter(c => c.id !== action.cardId)
+                    };
+                    newDiscard.push(playedCard);
+                    logs.push(` -> ${target.name} defends with ${playedCard.name}`);
+
+                    // Proceed to next in queue or end
+                    if (responseQueue.length > 0) {
+                        const next = responseQueue[0];
+                        pendingAction = {
+                            type: next.type === 'indians' ? 'indians' : 'bang',
+                            sourceId: next.sourceId,
+                            targetId: next.targetId,
+                            cardId: next.cardId
+                        };
+                        responseQueue.shift(); // Remove from queue
+                        // Keep currentPhase 'responding'
+                    } else {
+                        currentPhase = 'play';
+                        pendingAction = undefined; // Resolved
+                    }
+                }
+            }
+            else if (action.responseType === 'barrel') {
+                if (barrelUsed) return state; // Already used
+                if (pendingAction.type === 'indians') return state; // Cannot barrel Indians
+
+                // Draw Check
+                const check = checkDraw(newDeck, newDiscard);
+                newDeck = check.deck;
+                newDiscard = check.discardPile;
+                const drawnCard = check.drawnCard;
+
+                let success = drawnCard.suit === 'hearts';
+                if (target.character === 'Jourdonnais') {
+                    // Standard Jourdonnais is simplified here
+                }
+
+                logs.push(` -> ${target.name} Barrel: ${drawnCard.value} ${drawnCard.suit} (${success ? 'AVOIDED!' : 'FAILED'})`);
+
+                latestDrawCheck = {
+                    card: drawnCard,
+                    reason: 'barrel',
+                    success,
+                    playerId: target.id,
+                    timestamp: Date.now()
+                };
+
+                if (success) {
+                    // Proceed to next in queue or end
+                    if (responseQueue.length > 0) {
+                        const next = responseQueue[0];
+                        pendingAction = {
+                            type: next.type === 'indians' ? 'indians' : 'bang',
+                            sourceId: next.sourceId,
+                            targetId: next.targetId,
+                            cardId: next.cardId
+                        };
+                        responseQueue.shift();
+                    } else {
+                        currentPhase = 'play';
+                        pendingAction = undefined; // Resolved
+                    }
+                } else {
+                    // Mark barrel as used, allow user to try card or take hit
+                    pendingAction = { ...pendingAction!, barrelUsed: true };
+                }
+            }
+            else if (action.responseType === 'take_hit') {
+                // Damage Handling
+                const damageRes = handleDamage(
+                    { ...state, players: newPlayers, deck: newDeck, discardPile: newDiscard, currentPhase: 'play', pendingAction: undefined, logs },
+                    targetIndex,
+                    1,
+                    sourceIndex,
+                    newDeck,
+                    newDiscard,
+                    logs
+                );
+
+                // Update refs after damage
+                newPlayers = damageRes.players;
+                newDeck = damageRes.deck;
+                newDiscard = damageRes.discardPile;
+                logs = damageRes.logs;
+
+                // Proceed to next in queue or end
+                if (responseQueue.length > 0) {
+                    const next = responseQueue[0];
+                    pendingAction = {
+                        type: next.type === 'indians' ? 'indians' : 'bang',
+                        sourceId: next.sourceId,
+                        targetId: next.targetId,
+                        cardId: next.cardId
+                    };
+                    responseQueue.shift();
+                } else {
+                    currentPhase = 'play';
+                    pendingAction = undefined; // Resolved
+                }
+            }
+
+            return {
+                ...state,
+                players: newPlayers,
+                deck: newDeck,
+                discardPile: newDiscard,
+                logs: logs,
+                currentPhase: currentPhase,
+                pendingAction: pendingAction,
+                latestDrawCheck,
+                responseQueue: responseQueue
             };
         }
 
@@ -1251,3 +1458,150 @@ export function gameReducer(state: GameState, action: Action): GameState {
             return state;
     }
 }
+/*
+            if (state.currentPhase !== 'responding' || !state.pendingAction) return state;
+            const { sourceId, targetId, barrelUsed } = state.pendingAction;
+
+            // Validate Responder
+            const targetIndex = state.players.findIndex(p => p.id === targetId);
+            const sourceIndex = state.players.findIndex(p => p.id === sourceId);
+            const target = state.players[targetIndex];
+
+            let newPlayers = [...state.players];
+            let newDiscard = [...state.discardPile];
+            let newDeck = [...state.deck];
+            let logs = [...state.logs];
+            let pendingAction: GameState['pendingAction'] = state.pendingAction;
+            let latestDrawCheck = state.latestDrawCheck;
+            let nextPhase = state.currentPhase;
+
+            if (action.responseType === 'card') {
+                const isIndians = pendingAction.type === 'indians';
+                const requiredEffect = isIndians ? 'bang' : 'missed';
+                
+                const cardIndex = target.hand.findIndex(c => c.id === action.cardId && (c.effectType === requiredEffect || (target.character === 'Calamity Janet' && (c.effectType === 'bang' || c.effectType === 'missed'))));
+                
+                if (cardIndex !== -1) {
+                    const playedCard = target.hand[cardIndex];
+                    newPlayers[targetIndex] = {
+                        ...target,
+                        hand: target.hand.filter(c => c.id !== action.cardId)
+                    };
+                    newDiscard.push(playedCard);
+                    logs.push(` -> ${target.name} defends with ${playedCard.name}`);
+                    
+                    // Proceed to next in queue or end
+                    if (state.responseQueue && state.responseQueue.length > 0) {
+                        const next = state.responseQueue[0];
+                        pendingAction = {
+                            type: next.type === 'indians' ? 'indians' : next.type === 'gatling' ? 'bang' : 'bang', // Map types
+                            sourceId: next.sourceId,
+                            targetId: next.targetId,
+                            cardId: next.cardId
+                        };
+                        state.responseQueue.shift(); // Remove from queue
+                        // Keep currentPhase 'responding'
+                    } else {
+                        nextPhase = 'play';
+                        pendingAction = undefined; // Resolved
+                    }
+                }
+            }
+            else if (action.responseType === 'barrel') {
+                if (barrelUsed) return state; // Already used
+                if (pendingAction.type === 'indians') return state; // Cannot barrel Indians
+
+                // Draw Check
+                const check = checkDraw(newDeck, newDiscard);
+                newDeck = check.deck;
+                newDiscard = check.discardPile;
+                const drawnCard = check.drawnCard;
+
+                let success = drawnCard.suit === 'hearts'; // Barrel succeeds on Hearts
+                if (target.character === 'Jourdonnais') {
+                   // Jourdonnais effect is passive barrel, but if using item barrel...
+                   // Rules: Jourdonnais can use ability AND barrel. Implementation simplistic here.
+                }
+
+                logs.push(` -> ${target.name} Barrel Check: ${drawnCard.value} of ${drawnCard.suit} (${success ? 'AVOIDED!' : 'FAILED'})`);
+
+                latestDrawCheck = {
+                    card: drawnCard,
+                    reason: 'barrel',
+                    success,
+                    playerId: target.id,
+                    timestamp: Date.now()
+                };
+
+                if (success) {
+                     // Proceed to next in queue or end
+                    if (state.responseQueue && state.responseQueue.length > 0) {
+                        const next = state.responseQueue[0];
+                        pendingAction = {
+                            type: next.type === 'indians' ? 'indians' : next.type === 'gatling' ? 'bang' : 'bang',
+                            sourceId: next.sourceId,
+                            targetId: next.targetId,
+                            cardId: next.cardId
+                        };
+                        state.responseQueue.shift();
+                    } else {
+                        nextPhase = 'play';
+                        pendingAction = undefined;
+                    }
+                } else {
+                    // Mark barrel as used, allow user to try card or take hit
+                    pendingAction = { ...pendingAction!, barrelUsed: true };
+                }
+            }
+            else if (action.responseType === 'take_hit') {
+                // Damage Handling
+                const damageRes = handleDamage(
+                    { ...state, players: newPlayers, deck: newDeck, discardPile: newDiscard, currentPhase: 'play', pendingAction: undefined, logs },
+                    targetIndex,
+                    1,
+                    sourceIndex,
+                    newDeck,
+                    newDiscard,
+                    logs
+                );
+                
+                // Update refs after damage
+                newPlayers = damageRes.players;
+                newDeck = damageRes.deck;
+                newDiscard = damageRes.discardPile;
+                logs = damageRes.logs;
+
+                 // Proceed to next in queue or end
+                 if (state.responseQueue && state.responseQueue.length > 0) {
+                    const next = state.responseQueue[0];
+                    pendingAction = {
+                        type: next.type === 'indians' ? 'indians' : next.type === 'gatling' ? 'bang' : 'bang',
+                        sourceId: next.sourceId,
+                        targetId: next.targetId,
+                        cardId: next.cardId
+                    };
+                    state.responseQueue.shift();
+                } else {
+                    nextPhase = 'play';
+                    pendingAction = undefined;
+                }
+            }
+
+            return {
+                ...state,
+                players: newPlayers,
+                deck: newDeck,
+                discardPile: newDiscard,
+                logs: logs,
+                currentPhase: nextPhase,
+                pendingAction: pendingAction,
+                latestDrawCheck,
+                responseQueue: state.responseQueue
+            };
+        }
+
+        default:
+            return state;
+    }
+}
+*/

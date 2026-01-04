@@ -41,6 +41,9 @@ i18n
                     remove_bot: "REMOVE BOT",
                     bot_unit: "BOT UNIT",
                     ai_controlled: "AI Controlled",
+                    wanted_title: "WANTED",
+                    choose_legend: "CHOOSE YOUR LEGEND",
+                    select: "SELECT",
 
                     // Roles
                     role_admin: "Sheriff",
@@ -69,25 +72,76 @@ i18n
                     role: "Role",
                     character: "Character",
                     stats: "STATS",
+                    objective: "Objective",
+                    empty: "Empty",
+                    ability: "Ability",
+                    view: "View",
+                    health: "Health",
+                    current_status: "CURRENT STATUS",
+                    click_to_play: "CLICK TO PLAY",
+                    cards_in_hand: "Cards in Hand",
+                    distance_tooltip: "Distance / Range",
+                    phase_general_store: "GENERAL STORE",
+                    phase_sid_discard: "ABILITY: DISCARD 2",
+                    phase_kit_carlson_discard: "KIT: RETURN 1 CARD TO DECK",
+                    eliminated: "ELIMINATED",
+                    label_weapon: "WEAPON",
+                    label_gear: "GEAR",
+                    dead_status: "DEAD",
+                    type_equipment: "Equipment",
+                    type_scope: "Scope",
+                    type_action: "Action",
+                    type_status: "Status",
 
                     // Phases
                     phase_draw: "DRAW PHASE",
                     phase_play: "PLAY PHASE",
                     phase_discard: "DISCARD PHASE",
+                    phase_responding: "WAITING FOR RESPONSE...",
                     phase_wait: "WAITING...",
                     phase_select_character: "SELECT CHARACTER",
+                    general_store_open: "GENERAL STORE OPEN",
+                    your_turn_pick: "YOUR TURN TO PICK!",
+                    discard_pile: "Discard Pile",
+                    graveyard_empty: "The graveyard is empty...",
+                    waiting_bot: "WAITING FOR BOT...",
 
                     // Actions
                     draw_cards: "Draw Cards",
                     end_turn: "END TURN",
+                    use_ability: "USE ABILITY",
 
                     // Logs
                     game_init: "Game Initialized. Waiting to start...",
                     game_init_select_char: "Select your character!",
                     game_started: "Game Started! Sheriff goes first.",
                     turn_start: "Start of Turn",
+                    discard_limit: "Hand Limit: {{limit}}",
+                    discard_excess: "Discard {{count}} cards",
 
                     // Messages
+                    // Interactive Defense
+                    attacked: "ATTACKED!",
+                    play_missed_hint: "Select a Missed! card to dodge.",
+                    play_bang_hint: "Discard a BANG! card to escape!",
+                    use_barrel: "USE BARREL",
+                    take_damage: "TAKE DAMAGE",
+                    must_play_missed: "You must play a Missed! card!",
+
+                    // Messages
+                    limit_reached: "LIMIT REACHED",
+                    bang_limit_reached: "You can only play 1 BANG! per turn\nUNLESS YOU HAVE A VOLCANIC",
+
+                    // Draw Check
+                    checking: "Drawing for",
+                    failed: "FAILED",
+                    success: "PASSED",
+
+                    already_equipped: "ALREADY EQUIPPED",
+                    already_equipped_desc: "You already have {{card}} equipped!",
+                    cannot_jail_sheriff: "CANNOT JAIL SHERIFF",
+                    cannot_jail_sheriff_desc: "You cannot put the Sheriff in Jail!",
+                    close: "CLOSE",
                     your_turn: "It's your turn!",
                     waiting_for: "Waiting for {{name}}...",
                     win_admin: "Law and Order Prevails! (Sheriff Won)",
@@ -95,7 +149,7 @@ i18n
                     win_renegade: "New Sheriff in Town! (Renegade Won)",
 
                     // Characters
-                    char_vulture_sam: "Take a card when a player is eliminated.",
+                    char_vulture_sam: "Takes all cards (hand & table) from eliminated players.",
                     char_paul_regret: "All players see you at distance +1.",
                     char_kit_carlson: "Draw 3 cards, keep 2.",
                     char_jesse_jones: "Draw first card from another player's hand.",
@@ -117,7 +171,7 @@ i18n
                     card_missed_name: "Missed!",
                     card_beer_name: "Beer",
                     card_panic_name: "Panic!",
-                    card_cat_balou_name: "Cat Balou",
+                    card_lightning_name: "LIGHTNING",
                     card_stagecoach_name: "Stagecoach",
                     card_wells_fargo_name: "Wells Fargo",
                     card_general_store_name: "General Store",
@@ -156,12 +210,27 @@ i18n
                     card_remington_desc: "Range 3.",
                     card_rev_carabine_desc: "Range 4.",
                     card_winchester_desc: "Range 5.",
-                    card_mustang_desc: "Others see you at distance +1.",
+                    card_mustang_desc: "Others see you at distance +1",
                     card_scope_desc: "See others at distance -1.",
                     card_barrel_desc: "Draw! when attacked to avoid.",
                     card_jail_desc: "Skip turn unless you Draw! Hearts.",
                     card_dynamite_desc: "Draw! If Spades 2-9, take 3 damage.",
                     card_alijo_desc: "Draw a card when targeted by a Bang!.",
+
+                    // Modals
+                    modal: {
+                        weapon_replacement: "WEAPON REPLACEMENT",
+                        gear_limit_reached: "GEAR LIMIT REACHED",
+                        equip_new_weapon: "Equip New Weapon?",
+                        choose_discard: "Choose Item to Discard",
+                        new: "New",
+                        incoming: "Incoming",
+                        current: "Current",
+                        equipped: "Equipped",
+                        discard: "Discard",
+                        cancel: "Cancel",
+                        confirm_replace: "Confirm Replace"
+                    }
                 }
             },
 
@@ -190,6 +259,10 @@ i18n
                     remove_bot: "ELIMINAR BOT",
                     bot_unit: "UNIDAD ROBOT",
                     ai_controlled: "Controlado por IA",
+                    wanted_title: "SE BUSCA",
+                    choose_legend: "ELIGE TU LEYENDA",
+                    select: "SELECCIONAR",
+                    use_ability: "USAR HABILIDAD",
 
                     // Roles
                     role_admin: "Sheriff",
@@ -212,19 +285,53 @@ i18n
                     hp: "PV",
                     range: "Alcance",
                     distance: "Dist",
-                    cards: "Cartas",
+                    dead_status: "MUERTO",
+                    // Nombres de Cartas
                     deck: "Mazo",
                     discard: "Descartes",
                     role: "Rol",
                     character: "Personaje",
                     stats: "ESTADÍSTICAS",
+                    objective: "Objetivo",
+                    empty: "Vacío",
+                    ability: "Habilidad",
+                    view: "Visión",
+                    health: "Salud",
+                    current_status: "ESTADO ACTUAL",
+                    click_to_play: "CLIC PARA JUGAR",
+                    cards_in_hand: "Cartas en Mano",
+                    distance_tooltip: "Distancia / Alcance",
+                    phase_general_store: "ALMACÉN",
+                    phase_sid_discard: "HABILIDAD: DESCARTAR 2",
+                    phase_kit_carlson_discard: "KIT: DEVUELVE 1 CARTA AL MAZO",
+                    eliminated: "ELIMINADO",
+                    label_weapon: "ARMA",
+                    label_gear: "EQUIPO",
+                    type_equipment: "Equipo",
+                    type_scope: "Mirilla",
+                    type_action: "Acción",
+                    type_status: "Estado",
 
                     // Phases
                     phase_draw: "FASE DE ROBO",
                     phase_play: "FASE DE JUEGO",
                     phase_discard: "FASE DE DESCARTE",
+                    phase_responding: "ESPERANDO RESPUESTA...",
                     phase_wait: "ESPERANDO...",
                     phase_select_character: "ELEGIR PERSONAJE",
+                    general_store_open: "ALMACÉN ABIERTO",
+                    your_turn_pick: "¡TU TURNO DE ELEGIR!",
+
+                    // Interactive Defense
+                    attacked: "¡ATACADO!",
+                    use_barrel: "Usar Barril",
+                    take_damage: "Recibir Daño",
+                    play_missed_hint: "Elige carta Fallaste! para esquivar",
+                    must_play_missed: "¡Debes jugar una carta Fallaste!",
+
+                    discard_pile: "Pila de Descartes",
+                    graveyard_empty: "El cementerio está vacío...",
+                    waiting_bot: "ESPERANDO AL BOT...",
 
                     // Actions
                     draw_cards: "Robar Cartas",
@@ -235,16 +342,39 @@ i18n
                     game_init_select_char: "¡Elige tu personaje!",
                     game_started: "¡Empieza el juego! El Sheriff va primero.",
                     turn_start: "Inicio de Turno",
+                    discard_limit: "Límite: {{limit}}",
+                    discard_excess: "Descarta {{count}} cartas",
 
                     // Messages
+                    limit_reached: "LÍMITE ALCANZADO",
+                    bang_limit_reached: "Solo puedes jugar 1 BANG! por turno\nA MENOS QUE OTRA CARTA TE LO PERMITA",
+                    already_equipped: "YA EQUIPADO",
+                    already_equipped_desc: "¡Ya tienes equipado {{card}}!",
+                    cannot_jail_sheriff: "IMPOSIBLE ENCARCELAR AL SHERIFF",
+                    cannot_jail_sheriff_desc: "¡No puedes meter al Sheriff en la cárcel!",
+
+                    // Draw Check
+                    checking: "Comprobando",
+                    failed: "¡FALLÓ!",
+                    success: "¡EXITO!",
+
+                    close: "CERRAR",
                     your_turn: "¡Es tu turno!",
                     waiting_for: "Esperando a {{name}}...",
                     win_admin: "¡La Ley prevalece! (Ganó el Sheriff)",
                     win_outlaws: "¡El Oeste es Salvaje! (Ganaron Forajidos)",
                     win_renegade: "¡Nuevo Sheriff en la ciudad! (Ganó Renegado)",
 
+                    // Interactive Defense
+                    attacked: "¡ATACADO!",
+                    play_missed_hint: "¡Elige carta Fallaste! para esquivar",
+                    play_bang_hint: "¡Descarta un BANG! para escapar",
+                    use_barrel: "USAR BARRIL",
+                    take_damage: "RECIBIR DAÑO",
+                    must_play_missed: "¡Debes jugar una carta Fallaste!",
+
                     // Characters
-                    char_vulture_sam: "Toma una carta cuando un jugador es eliminado.",
+                    char_vulture_sam: "Toma todas las cartas (mano y juego) de los jugadores eliminados.",
                     char_paul_regret: "Todos te ven a distancia +1.",
                     char_kit_carlson: "Roba 3 cartas, quédate 2.",
                     char_jesse_jones: "Roba la primera carta de la mano de otro.",
@@ -266,7 +396,7 @@ i18n
                     card_missed_name: "¡Fallado!",
                     card_beer_name: "Cerveza",
                     card_panic_name: "¡Pánico!",
-                    card_cat_balou_name: "Cat Balou",
+                    card_lightning_name: "RAYO",
                     card_stagecoach_name: "Diligencia",
                     card_wells_fargo_name: "Wells Fargo",
                     card_general_store_name: "Almacén",
@@ -306,12 +436,27 @@ i18n
                     card_remington_desc: "Alcance 3.",
                     card_rev_carabine_desc: "Alcance 4.",
                     card_winchester_desc: "Alcance 5.",
-                    card_mustang_desc: "Otros te ven a distancia +1.",
+                    card_mustang_desc: "Otros te ven a distancia +1",
                     card_scope_desc: "Ves a otros a distancia -1.",
                     card_barrel_desc: "¡Desenfundar! al ser atacado para evitar.",
                     card_jail_desc: "Pierdes turno a menos que Desenfudes Corazones.",
                     card_dynamite_desc: "¡Desenfundar! Si Picas 2-9, recibes 3 daño.",
-                    card_alijo_desc: "Esta carta permite robar cuando es objetivo de un BANG.",
+                    card_alijo_desc: "Roba una carta cuando eres objetivo de un Bang!.",
+
+                    // Modals
+                    modal: {
+                        weapon_replacement: "REEMPLAZO DE ARMA",
+                        gear_limit_reached: "LÍMITE DE EQUIPO ALCANZADO",
+                        equip_new_weapon: "¿Equipar Nueva Arma?",
+                        choose_discard: "Elige Objeto a Descartar",
+                        new: "Nueva",
+                        incoming: "Entrante",
+                        current: "Actual",
+                        equipped: "Equipado",
+                        discard: "Descartar",
+                        cancel: "Cancelar",
+                        confirm_replace: "Confirmar"
+                    }
                 }
             },
         },

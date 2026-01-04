@@ -141,6 +141,42 @@ const GameLayout: React.FC<{ settings: GameSettings }> = ({ settings }) => {
                 }
             }
 
+            // --- BOT DEFENSE LOGIC (Interactive Response) ---
+            if (state.currentPhase === 'responding' && state.pendingAction) {
+                const targetPlayer = state.players.find(p => p.id === state.pendingAction?.targetId);
+
+                if (targetPlayer && targetPlayer.isBot && !targetPlayer.isDead) {
+                    const timer = setTimeout(() => {
+                        const isIndians = state.pendingAction?.type === 'indians';
+
+                        // Priority 1: Use Barrel (if available and not used) -- CANNOT USE AGAINST INDIANS
+                        const hasBarrel = (targetPlayer.table.some(c => c.name === 'Barrel') || targetPlayer.character === 'Jourdonnais') && !isIndians;
+                        if (hasBarrel && !state.pendingAction?.barrelUsed) {
+                            dispatch({ type: 'RESPOND', responseType: 'barrel' });
+                            return;
+                        }
+
+                        // Priority 2: Play Correct Defense Card
+                        const requiredEffect = isIndians ? 'bang' : 'missed';
+
+                        const defenseCard = targetPlayer.hand.find(c => c.effectType === requiredEffect);
+                        const calamityCard = targetPlayer.character === 'Calamity Janet' ? targetPlayer.hand.find(c => c.effectType === (isIndians ? 'missed' : 'bang')) : null;
+
+                        const cardToPlay = defenseCard || calamityCard;
+
+                        if (cardToPlay) {
+                            dispatch({ type: 'RESPOND', responseType: 'card', cardId: cardToPlay.id });
+                            return;
+                        }
+
+                        // Priority 3: Take Hit
+                        dispatch({ type: 'RESPOND', responseType: 'take_hit' });
+
+                    }, 1500); // 1.5s delay for "thinking"
+                    return () => clearTimeout(timer);
+                }
+            }
+
             // --- HUMAN AUTO-DRAW (Optional, but good for flow) ---
             // If it's the start of turn (phase 'draw') we trigger START_TURN Action to actually draw
             // BUT we must avoid infinite loop. The Reducer sets phase to 'play' after START_TURN.

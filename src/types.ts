@@ -53,18 +53,26 @@ export interface GameState {
     deck: Card[];
     discardPile: Card[];
     turnIndex: number;
-    currentPhase: 'draw' | 'play' | 'discard' | 'select_character' | 'general_store';
+    currentPhase: 'draw' | 'play' | 'discard' | 'select_character' | 'general_store' | 'sid_discard' | 'kit_carlson_discard' | 'responding';
     logs: string[];
     selectedCardId: string | null;
+    abilityPendingDiscords?: string[]; // IDs of cards discarded for ability (Sid Ketchum)
     gameOver?: boolean;
     winner?: string;
     pendingCharacters?: Record<string, Character[]>; // playerId -> characters
     pendingAction?: {
-        type: 'counter'; // waiting for a response (e.g. Missed!)
+        type: 'bang' | 'duel' | 'general_store' | 'counter' | 'indians' | 'gatling'; // counter = waiting for missed/barrel
         sourceId: string;
         targetId: string;
-        cardId: string;
+        cardId?: string; // Card used to attack
+        barrelUsed?: boolean; // If target tried barrel already
     };
+    responseQueue?: {
+        targetId: string;
+        sourceId: string;
+        cardId: string;
+        type: 'indians' | 'gatling';
+    }[]; // For global attacks (Gatling, Indians)
     latestDrawCheck?: {
         card: Card;
         reason: 'barrel' | 'dynamite' | 'jail' | 'event';
@@ -89,9 +97,13 @@ export type Action =
     | { type: 'INIT_GAME'; playerName: string; botCount: number; botNames?: string[] }
     | { type: 'START_TURN' }
     | { type: 'SELECT_CARD'; cardId: string | null }
-    | { type: 'PLAY_CARD'; cardId: string; targetId?: string }
+    | { type: 'PLAY_CARD'; cardId: string; targetId?: string; replacedCardId?: string }
     | { type: 'END_TURN' }
     | { type: 'DISCARD_CARD'; cardId: string }
     | { type: 'DRAW_CARD' }
+    | { type: 'DRAW_CARD' }
     | { type: 'DRAFT_CARD'; cardId: string }
-    | { type: 'CHOOSE_CHARACTER'; playerId: string; characterName: string };
+    | { type: 'DRAFT_CARD'; cardId: string }
+    | { type: 'CHOOSE_CHARACTER'; playerId: string; characterName: string }
+    | { type: 'USE_ABILITY'; playerId: string }
+    | { type: 'RESPOND'; responseType: 'card' | 'barrel' | 'take_hit'; cardId?: string };
