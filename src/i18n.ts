@@ -285,6 +285,9 @@ i18n
                     hp: "PV",
                     range: "Alcance",
                     distance: "Dist",
+                    player_intel: "INFORMACIÓN JUGADOR",
+                    hand_label: "Mano",
+                    cards_suffix: "cartas",
                     dead_status: "MUERTO",
                     // Nombres de Cartas
                     deck: "Mazo",
@@ -344,6 +347,45 @@ i18n
                     turn_start: "Inicio de Turno",
                     discard_limit: "Límite: {{limit}}",
                     discard_excess: "Descarta {{count}} cartas",
+                    log_jail_check: "{{name}} revisa la Prisión... Carta: {{card}}",
+                    log_jail_escaped: "¡Escapó de la Prisión! El turno continúa.",
+                    log_jail_stayed: "¡Se queda en Prisión! Pierde el turno.",
+                    log_dynamite_check: "{{name}} revisa la Dinamita... Carta: {{card}}",
+                    log_dynamite_exploded: "¡LA DINAMITA EXPLOTÓ! 3 de Daño!",
+                    log_dynamite_passed: "La Dinamita pasa el siguiente jugador.",
+                    log_barrel_check: "{{name}} usa Barril... Carta: {{card}}",
+                    log_barrel_success: "¡Esquivado! (Barril)",
+                    log_barrel_fail: "¡Falló! (Barril)",
+                    log_panic_range: "¡Objetivo fuera de alcance para Pánico! (Dist: {{dist}})",
+                    error_out_of_range_title: "OBJETIVO FUERA DE ALCANCE",
+                    error_out_of_range_desc: "Distancia al Objetivo: {{dist}}\nTu Alcance: {{range}}\n\n¡Necesitas un arma con más alcance o acercarte (Mustang)!",
+
+                    // Death
+                    death_title: "ELIMINADO",
+                    death_desc: "Has caído en combate...",
+                    spectate_mode: "MODO ESPECTADOR",
+
+                    // Draw Check
+                    draw_check_title: "CHEQUEO DE CARTA",
+                    success: "ÉXITO",
+                    fail: "FALLO",
+                    player_label: "Jugador",
+                    check_reason_barrel: "EFECTO BARRIL",
+                    check_reason_dynamite: "DINAMITA",
+                    check_reason_jail: "PRISIÓN",
+                    check_reason_event: "EVENTO",
+
+                    // Jesse Jones
+                    jesse_jones_prompt: "Habilidad: Jesse Jones",
+                    jesse_jones_desc: "Puedes robar tu primera carta del mazo o de la mano de otro jugador.",
+                    draw_deck: "Robar del Mazo",
+                    steal_hand: "Robar de {{name}}",
+                    steal_hand_short: "Robar Mano",
+
+                    // Kit Carlson
+                    kit_carlson_prompt: "Elige 1 carta para DEVOLVER al mazo",
+                    kit_carlson_keep: "(Te quedarás con las otras 2)",
+                    return_to_deck: "DEVOLVER",
 
                     // Messages
                     limit_reached: "LÍMITE ALCANZADO",
@@ -355,8 +397,6 @@ i18n
 
                     // Draw Check
                     checking: "Comprobando",
-                    failed: "¡FALLÓ!",
-                    success: "¡EXITO!",
 
                     close: "CERRAR",
                     your_turn: "¡Es tu turno!",
@@ -365,13 +405,17 @@ i18n
                     win_outlaws: "¡El Oeste es Salvaje! (Ganaron Forajidos)",
                     win_renegade: "¡Nuevo Sheriff en la ciudad! (Ganó Renegado)",
 
-                    // Interactive Defense
-                    attacked: "¡ATACADO!",
-                    play_missed_hint: "¡Elige carta Fallaste! para esquivar",
-                    play_bang_hint: "¡Descarta un BANG! para escapar",
-                    use_barrel: "USAR BARRIL",
-                    take_damage: "RECIBIR DAÑO",
-                    must_play_missed: "¡Debes jugar una carta Fallaste!",
+                    needs_bang: "La carta INDIOS requiere descartar un BANG! o recibir daño.",
+                    out_of_range: "OBJETIVO FUERA DE ALCANCE",
+                    invalid_card: "CARTA INVÁLIDA",
+
+                    // Death Logs
+                    log_kill_outlaw: "💰 RECOMPENSA: Robas 3 cartas por eliminar a un FORAJIDO.",
+                    log_kill_deputy: "⚠️ CASTIGO: El Sheriff pierde todas sus cartas por matar a un AGUACIL.",
+                    log_vulture_loot: "🦅 Vulture Sam rapiña las cartas de {{name}}.",
+                    log_death_discard: "⚰️ Las cartas de {{name}} van al descarte.",
+                    needs_missed: "Necesitas una carta FALLASTE.",
+                    hand_empty: "Tu mano está vacía...",
 
                     // Characters
                     char_vulture_sam: "Toma todas las cartas (mano y juego) de los jugadores eliminados.",
@@ -428,10 +472,12 @@ i18n
                     card_wells_fargo_desc: "Roba 3 cartas.",
                     card_general_store_desc: "Revela cartas para que todos elijan.",
                     card_duel_desc: "Desafía a un jugador.",
-                    card_indians_desc: "Todos descartan BANG! o reciben daño.",
+                    card_indians_desc: "Todos los demás descartan BANG! o reciben daño.",
                     card_gatling_desc: "Dispara un BANG! a todos los demás.",
                     card_saloon_desc: "Cura 1 PV a todos.",
                     card_volcanic_desc: "Alcance 1. Juega BANGs ilimitados.",
+                    card_dynamite: "DINAMITA",
+                    card_dynamite_desc: "Al inicio de tu turno: Si sacas Espadas 2-9, ¡PIERDES 3 VIDAS! Si no, pasa al vecino.",
                     card_schofield_desc: "Alcance 2.",
                     card_remington_desc: "Alcance 3.",
                     card_rev_carabine_desc: "Alcance 4.",
@@ -440,7 +486,8 @@ i18n
                     card_scope_desc: "Ves a otros a distancia -1.",
                     card_barrel_desc: "¡Desenfundar! al ser atacado para evitar.",
                     card_jail_desc: "Pierdes turno a menos que Desenfudes Corazones.",
-                    card_dynamite_desc: "¡Desenfundar! Si Picas 2-9, recibes 3 daño.",
+
+
                     card_alijo_desc: "Roba una carta cuando eres objetivo de un Bang!.",
 
                     // Modals

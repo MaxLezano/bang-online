@@ -53,7 +53,7 @@ export interface GameState {
     deck: Card[];
     discardPile: Card[];
     turnIndex: number;
-    currentPhase: 'draw' | 'play' | 'discard' | 'select_character' | 'general_store' | 'sid_discard' | 'kit_carlson_discard' | 'responding';
+    currentPhase: 'draw' | 'play' | 'discard' | 'select_character' | 'general_store' | 'sid_discard' | 'kit_carlson_discard' | 'jesse_jones_draw' | 'responding';
     logs: string[];
     selectedCardId: string | null;
     abilityPendingDiscords?: string[]; // IDs of cards discarded for ability (Sid Ketchum)
@@ -84,6 +84,7 @@ export interface GameState {
     turnPlayedCards?: Card[];
     generalStoreCards?: Card[];
     generalStoreTurnIndex?: number | null;
+    kitCarlsonCards?: Card[]; // Temp storage for Kit's 3 cards
 }
 
 export interface GameSettings {
@@ -97,6 +98,7 @@ export type Action =
     | { type: 'INIT_GAME'; playerName: string; botCount: number; botNames?: string[] }
     | { type: 'START_TURN' }
     | { type: 'SELECT_CARD'; cardId: string | null }
+    | { type: 'JESSE_CHOOSE_DRAW'; source: 'deck' | 'player'; targetId?: string }
     | { type: 'PLAY_CARD'; cardId: string; targetId?: string; replacedCardId?: string }
     | { type: 'END_TURN' }
     | { type: 'DISCARD_CARD'; cardId: string }

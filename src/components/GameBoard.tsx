@@ -8,6 +8,23 @@ export const GameBoard: React.FC = () => {
     const { state, dispatch } = useGame();
     const { t } = useTranslation();
 
+    // Inject custom styles for heartbeat
+    React.useEffect(() => {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes heartbeat {
+                0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(220,38,38,0.5)); }
+                15% { transform: scale(1.3); filter: drop-shadow(0 0 20px rgba(220,38,38,1)); }
+                30% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(220,38,38,0.5)); }
+                45% { transform: scale(1.15); filter: drop-shadow(0 0 15px rgba(220,38,38,0.8)); }
+                60% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(220,38,38,0.5)); }
+                100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(220,38,38,0.5)); }
+            }
+        `;
+        document.head.appendChild(style);
+        return () => { document.head.removeChild(style); };
+    }, []);
+
     // Determine "My Player" (always index 0 for this prototype)
     const myPlayerIndex = 0;
     const myPlayer = state.players[myPlayerIndex];
@@ -35,6 +52,34 @@ export const GameBoard: React.FC = () => {
 
     // NEW: Generic Feedback Modal (Replaces Alerts)
     const [feedbackModal, setFeedbackModal] = React.useState<{ title: string; message: string; type?: 'error' | 'info' | 'success' } | null>(null);
+
+    // NEW: Death Screen State
+    const [dismissedDeathScreen, setDismissedDeathScreen] = React.useState(false);
+
+    // NEW: Draw Check Modal (Dynamite/Jail)
+    const [drawCheckModal, setDrawCheckModal] = React.useState<{ card: any; reason: string; success: boolean; playerName: string } | null>(null);
+
+    // Effect: Listen for new Draw Check
+    React.useEffect(() => {
+        if (state.latestDrawCheck && Date.now() - state.latestDrawCheck.timestamp < 3000) {
+            const player = state.players.find(p => p.id === state.latestDrawCheck?.playerId);
+            if (player) {
+                setDrawCheckModal({
+                    card: state.latestDrawCheck.card,
+                    reason: state.latestDrawCheck.reason,
+                    success: state.latestDrawCheck.success,
+                    playerName: player.name
+                });
+
+                // Auto hide after 3 seconds
+                const timer = setTimeout(() => {
+                    setDrawCheckModal(null);
+                }, 3000);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [state.latestDrawCheck]);
+
 
 
 
@@ -83,6 +128,12 @@ export const GameBoard: React.FC = () => {
         // Discard Phase Logic
         if (state.currentPhase === 'discard') {
             dispatch({ type: 'DISCARD_CARD', cardId });
+            return;
+        }
+
+        // Kit Carlson Discard Phase
+        if (state.currentPhase === 'kit_carlson_discard') {
+            dispatch({ type: 'SELECT_CARD', cardId });
             return;
         }
 
@@ -159,29 +210,12 @@ export const GameBoard: React.FC = () => {
             }
         }
 
-        // 0. RESPONDING PHASE (Interactive Defense)
-        if (state.currentPhase === 'responding' && state.turnIndex === myPlayerIndex) {
-            const pending = state.pendingAction;
-            if (pending) {
-                const isIndians = pending.type === 'indians';
-                const requiredEffect = isIndians ? 'bang' : 'missed';
-
-                // Allow Calamity Janet Swap
-                const isValidDefense = card.effectType === requiredEffect ||
-                    (myPlayer.character === 'Calamity Janet' && (card.effectType === 'bang' || card.effectType === 'missed'));
-
-                if (isValidDefense) {
-                    dispatch({ type: 'RESPOND', responseType: 'card', cardId: card.id });
-                    return;
-                } else {
-                    setFeedbackModal({
-                        title: t('invalid_card') || "INVALID CARD",
-                        message: isIndians ? (t('needs_bang') || "You need a BANG! card.") : (t('needs_missed') || "You need a MISSED! card."),
-                        type: 'error'
-                    });
-                    return;
-                }
-            }
+        // 0. RESPONDING PHASE - Guard: If we are here and phase is responding, but we aren't the target (handled above),
+        // it means we are waiting for someone else. We should NOT be able to play cards.
+        if (state.currentPhase === 'responding') {
+            // Just return silently or show a "Waiting" toast if desired.
+            // For now, silent return prevents the "Invalid Card" error.
+            return;
         }
 
         // 3. TARGETED CARDS (Bang, Panic, Cat Balou, Jail, Duel)
@@ -227,6 +261,24 @@ export const GameBoard: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, [state.latestDrawCheck]);
+
+    // ERROR LISTENER (Logs)
+    React.useEffect(() => {
+        if (state.logs.length > 0) {
+            const lastLog = state.logs[state.logs.length - 1];
+            if (lastLog.startsWith('ERROR_RANGE:')) {
+                const parts = lastLog.replace('ERROR_RANGE:', '').split('|');
+                const dist = parts[0] || '?';
+                const range = parts[1] || '?';
+
+                setFeedbackModal({
+                    title: t('error_out_of_range_title'),
+                    message: t('error_out_of_range_desc', { dist, range }),
+                    type: 'error'
+                });
+            }
+        }
+    }, [state.logs]);
 
     // KEYBOARD CONTROLS - Moved ABOVE early return to fix Hook Order
     useEffect(() => {
@@ -553,9 +605,10 @@ export const GameBoard: React.FC = () => {
                                     state.currentPhase === 'play' ? t('phase_play') :
                                         state.currentPhase === 'discard' ? t('phase_discard') :
                                             state.currentPhase === 'sid_discard' ? t('phase_sid_discard') :
-                                                state.currentPhase === 'responding' ? t('phase_responding') :
-                                                    state.turnIndex === myPlayerIndex ? t('your_turn') :
-                                                        t('waiting_for', { name: state.players[state.turnIndex]?.name.toUpperCase() })}
+                                                state.currentPhase === 'kit_carlson_discard' ? (t('phase_kit_carlson_discard') || "RETURN 1 CARD") :
+                                                    state.currentPhase === 'responding' ? t('phase_responding') :
+                                                        state.turnIndex === myPlayerIndex ? t('your_turn') :
+                                                            t('waiting_for', { name: state.players[state.turnIndex]?.name.toUpperCase() })}
                             </span>
                         </div>
 
@@ -816,7 +869,12 @@ export const GameBoard: React.FC = () => {
                                         {/* Icon Box Visual */}
                                         <div className="w-8 h-10 bg-black/80 rounded border border-gray-600 flex items-center justify-center p-1.5 shadow-sm transition-transform hover:scale-110 hover:border-white">
                                             <img
-                                                src={card.name === 'Jail' || card.nameKey === 'card_jail_name' ? '/icons/jail.svg' : (card.subType === 'Weapon' ? '/icons/gun.svg' : '/icons/shield.svg')}
+                                                src={
+                                                    card.effectType === 'dynamite' ? "/icons/dynamite.svg" :
+                                                        card.effectType === 'jail' ? "/icons/jail.svg" :
+                                                            card.subType === 'Weapon' ? "/icons/gun.svg" :
+                                                                "/icons/shield.svg"
+                                                }
                                                 alt={card.subType}
                                                 className="w-full h-full object-contain invert opacity-70 group-hover/eq:opacity-100 transition-opacity"
                                             />
@@ -844,9 +902,12 @@ export const GameBoard: React.FC = () => {
                                     alt={opp.role}
                                     className="absolute inset-0 w-full h-full object-cover grayscale opacity-50"
                                 />
-                                <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                                     <div className="text-red-500 font-black text-3xl uppercase tracking-widest rotate-[-15deg] border-4 border-red-600 px-2 py-1 rounded bg-black/50 backdrop-blur-sm shadow-[0_0_20px_rgba(220,38,38,0.5)]">
                                         {t('dead_status')}
+                                    </div>
+                                    <div className="mt-4 bg-black/80 text-white font-bold text-xs px-3 py-1 rounded border border-gray-600 uppercase tracking-widest shadow-lg">
+                                        {t(`role_${opp.role.toLowerCase()}`) || opp.role}
                                     </div>
                                 </div>
                             </div>
@@ -855,23 +916,23 @@ export const GameBoard: React.FC = () => {
                         {/* DETAILED HOVER INFO (Replaces simple hint) */}
                         {!state.selectedCardId && (
                             <div className="absolute opacity-0 group-hover:opacity-100 top-full mt-4 w-56 bg-black/95 border border-gray-600 p-3 rounded-lg shadow-2xl transition-opacity pointer-events-none z-[1000] flex flex-col gap-2">
-                                <div className="text-gray-400 text-[10px] uppercase font-bold border-b border-gray-800 pb-1 mb-1">Player Intel</div>
+                                <div className="text-gray-400 text-[10px] uppercase font-bold border-b border-gray-800 pb-1 mb-1">{t('player_intel') || "Player Intel"}</div>
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-gray-500">Hand:</span>
-                                    <span className="text-white font-mono">{opp.hand.length} cards</span>
+                                    <span className="text-gray-500">{t('hand_label') || "Hand"}:</span>
+                                    <span className="text-white font-mono">{opp.hand.length} {t('cards_suffix') || "cards"}</span>
                                 </div>
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-gray-500">HP:</span>
+                                    <span className="text-gray-500">{t('hp') || "HP"}:</span>
                                     <span className="text-red-400 font-mono">{opp.hp}/{opp.maxHp}</span>
                                 </div>
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-gray-500">Range:</span>
+                                    <span className="text-gray-500">{t('range') || "Range"}:</span>
                                     <span className="text-cyan-400 font-mono">{opp.weaponRange}</span>
                                 </div>
                                 {/* Show Equipment Icons if any */}
                                 {opp.table.length > 0 && (
                                     <div className="mt-2 border-t border-gray-800 pt-2">
-                                        <div className="text-[10px] text-gray-500 mb-1">Equipment:</div>
+                                        <div className="text-[10px] text-gray-500 mb-1">{t('type_equipment') || "Equipment"}:</div>
                                         <div className="flex flex-wrap gap-1">
                                             {opp.table.map((c, i) => (
                                                 <div key={i} className="px-1.5 py-0.5 bg-blue-900/40 border border-blue-500/30 rounded text-[9px] text-blue-300">
@@ -907,8 +968,8 @@ export const GameBoard: React.FC = () => {
                     {/* Stats Header (Redesigned: Health Bars top, Range/View Compact) */}
                     <div className="flex justify-between items-center bg-black/40 px-4 py-2 rounded-lg border border-gray-800">
                         {/* ROLE ICON WITH HOVER TOOLTIP */}
-                        <div className="flex items-center gap-4 group/role relative cursor-help">
-                            <div className="relative flex items-center justify-center px-4">
+                        <div className="flex items-center gap-4">
+                            <div className="relative flex items-center justify-center px-4 group/role cursor-help">
                                 <span className="relative z-10 text-lg md:text-xl font-black text-amber-100 uppercase leading-none tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                                     {t(`role_${myPlayer.role.toLowerCase()}`) || myPlayer.role}
                                 </span>
@@ -922,26 +983,26 @@ export const GameBoard: React.FC = () => {
                                         }}
                                     />
                                 )}
-                            </div>
 
-                            {/* ROLE TOOLTIP - Positioned higher to clear bounds */}
-                            <div className="absolute bottom-full left-0 mb-4 w-64 bg-black/95 border border-yellow-600/50 p-4 rounded-lg shadow-2xl opacity-0 group-hover/role:opacity-100 transition-opacity pointer-events-none z-[1000] ring-1 ring-yellow-500/20">
-                                <h3 className="text-yellow-500 font-black text-lg uppercase tracking-tighter leading-none mb-2">{t(`role_${myPlayer.role.toLowerCase()}`)}</h3>
-                                <h4 className="text-yellow-500 font-bold text-sm uppercase mb-1 flex items-center gap-2">
-                                    <span className="text-[10px] bg-yellow-900/40 px-1 rounded text-yellow-200/70 border border-yellow-700/30">{t('objective')}</span>
-                                </h4>
-                                <p className="text-xs text-gray-300 leading-relaxed border-t border-gray-800 pt-2 mt-1">
-                                    {myPlayer.role === 'Sheriff' ? t('role_sheriff_goal') :
-                                        myPlayer.role === 'Outlaw' ? t('role_outlaw_goal') :
-                                            myPlayer.role === 'Renegade' ? t('role_renegade_goal') :
-                                                t('role_deputy_goal')}
-                                </p>
-                                {/* Role Card Image */}
-                                <img
-                                    src={`/cards/role_${myPlayer.role.toLowerCase()}.png`}
-                                    alt={myPlayer.role}
-                                    className="w-full h-auto rounded mt-2 shadow-sm border border-white/10 opacity-90"
-                                />
+                                {/* ROLE TOOLTIP - Positioned higher to clear bounds */}
+                                <div className="absolute bottom-full left-0 mb-4 w-64 bg-black/95 border border-yellow-600/50 p-4 rounded-lg shadow-2xl opacity-0 group-hover/role:opacity-100 transition-opacity pointer-events-none z-[1000] ring-1 ring-yellow-500/20">
+                                    <h3 className="text-yellow-500 font-black text-lg uppercase tracking-tighter leading-none mb-2">{t(`role_${myPlayer.role.toLowerCase()}`)}</h3>
+                                    <h4 className="text-yellow-500 font-bold text-sm uppercase mb-1 flex items-center gap-2">
+                                        <span className="text-[10px] bg-yellow-900/40 px-1 rounded text-yellow-200/70 border border-yellow-700/30">{t('objective')}</span>
+                                    </h4>
+                                    <p className="text-xs text-gray-300 leading-relaxed border-t border-gray-800 pt-2 mt-1">
+                                        {myPlayer.role === 'Sheriff' ? t('role_sheriff_goal') :
+                                            myPlayer.role === 'Outlaw' ? t('role_outlaw_goal') :
+                                                myPlayer.role === 'Renegade' ? t('role_renegade_goal') :
+                                                    t('role_deputy_goal')}
+                                    </p>
+                                    {/* Role Card Image */}
+                                    <img
+                                        src={`/cards/role_${myPlayer.role.toLowerCase()}.png`}
+                                        alt={myPlayer.role}
+                                        className="w-full h-auto rounded mt-2 shadow-sm border border-white/10 opacity-90"
+                                    />
+                                </div>
                             </div>
 
                             <div className="h-6 w-[1px] bg-gray-700 ml-2"></div>
@@ -954,6 +1015,27 @@ export const GameBoard: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* DYNAMITE INDICATOR (New Position - Next to Health) */}
+                            {myPlayer.table.some(c => c.name === 'Dynamite') && (
+                                <div className="ml-3 relative group/dynamite">
+                                    <div className="filter drop-shadow-[0_0_15px_rgba(220,38,38,1)] brightness-150 animate-[heartbeat_0.8s_ease-in-out_infinite]">
+                                        <img
+                                            src="/icons/dynamite.svg"
+                                            alt="Dynamite Active"
+                                            className="w-10 h-10 object-contain invert"
+                                        />
+                                    </div>
+                                    {/* Tooltip */}
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-black/95 border border-red-500 p-2 rounded z-[100] opacity-0 group-hover/dynamite:opacity-100 transition-opacity pointer-events-none">
+                                        <div className="font-bold text-red-400 text-xs uppercase mb-1">{t('card_dynamite')}</div>
+                                        <div className="text-[10px] text-gray-300 italic leading-tight">
+                                            {t('card_dynamite_desc')}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
 
 
@@ -985,16 +1067,7 @@ export const GameBoard: React.FC = () => {
                                 🤠
                             </div>
 
-                            {/* DYNAMITE WARNING - My Turn */}
-                            {myPlayer.table.some(c => c.effectType === 'dynamite') && state.turnIndex === myPlayerIndex && (
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[80%] w-20 h-20 z-40 animate-pulse drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] filter brightness-125 pointer-events-none">
-                                    <img
-                                        src="/icons/dynamite.svg"
-                                        alt="Dynamite Active"
-                                        className="w-full h-full object-contain"
-                                    />
-                                </div>
-                            )}
+
 
                             {/* Full Bleed Name Overlay */}
                             <div className="absolute bottom-0 left-0 right-0 p-2 pb-3 bg-gradient-to-t from-black via-black/80 to-transparent z-30 rounded-b">
@@ -1047,8 +1120,9 @@ export const GameBoard: React.FC = () => {
                         </div>
 
                         {/* SLOT 3 & 4: GEAR */}
+                        {/* SLOT 3 & 4: GEAR (Exclude Dynamite) */}
                         {[0, 1].map(i => {
-                            const equip = myPlayer.table.filter(c => c.subType !== 'Weapon')[i];
+                            const equip = myPlayer.table.filter(c => c.subType !== 'Weapon' && c.name !== 'Dynamite')[i];
                             return (
                                 <div key={i} onClick={() => handleSlotClick('Gear')} className="w-32 h-48 bg-black/60 rounded border-2 border-dashed border-gray-700 flex items-center justify-center relative hover:border-blue-500/30 transition-colors group/slot cursor-pointer">
                                     <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#151515] px-2 text-[8px] text-gray-500 uppercase font-bold tracking-widest z-10 border border-gray-800 rounded">{t('label_gear')} {i + 1}</div>
@@ -1153,7 +1227,7 @@ export const GameBoard: React.FC = () => {
                                 })}
                                 {
                                     myPlayer.hand.length === 0 && (
-                                        <div className="text-gray-600 italic text-xl p-8 animate-pulse self-center">Your hand is empty...</div>
+                                        <div className="text-gray-600 italic text-xl p-8 animate-pulse self-center">{t('hand_empty') || "Your hand is empty..."}</div>
                                     )
                                 }
                             </div>
@@ -1183,8 +1257,8 @@ export const GameBoard: React.FC = () => {
                                 </div>
 
                                 <div className="flex gap-4 relative z-10">
-                                    {/* BARREL BUTTON */}
-                                    {hasBarrel && !barrelUsed && (
+                                    {/* BARREL BUTTON - Cannot use against Indians */}
+                                    {hasBarrel && !barrelUsed && state.pendingAction?.type !== 'indians' && (
                                         <button
                                             onClick={() => dispatch({ type: 'RESPOND', responseType: 'barrel' })}
                                             className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 active:scale-95 transition-all text-xl uppercase tracking-wider flex items-center gap-2"
@@ -1376,7 +1450,7 @@ export const GameBoard: React.FC = () => {
 
                                     {/* TOOLTIP */}
                                     <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-56 bg-black/95 border border-yellow-600/50 p-3 rounded-lg z-[2100] hidden group-hover:block pointer-events-none shadow-2xl">
-                                        <div className="text-yellow-500 font-bold border-b border-gray-700 pb-1 mb-1 text-center">{card.name}</div>
+                                        <div className="text-yellow-500 font-bold border-b border-gray-700 pb-1 mb-1 text-center">{t(card.nameKey) || card.name}</div>
                                         <div className="text-gray-300 text-xs italic text-center leading-relaxed">{card.description || t(card.descKey)}</div>
                                     </div>
                                 </div>
@@ -1385,6 +1459,132 @@ export const GameBoard: React.FC = () => {
                     </div>
                 )
             }
+
+            {/* DRAW CHECK MODAL (Jail/Dynamite) */}
+            <AnimatePresence>
+                {drawCheckModal && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="fixed inset-0 z-[4000] flex items-center justify-center pointer-events-none"
+                    >
+                        <div className="bg-black/90 border-2 border-white/20 p-6 rounded-2xl flex flex-col items-center gap-4 shadow-2xl backdrop-blur-md">
+                            <h2 className="text-2xl font-black text-white uppercase tracking-widest border-b border-gray-700 pb-2 w-full text-center">
+                                {t('draw_check_title') || "DRAW CHECK"}
+                            </h2>
+                            <div className="text-xl text-yellow-500 font-bold uppercase">{t(`check_reason_${drawCheckModal.reason}`) || drawCheckModal.reason}</div>
+
+                            <div className="relative group">
+                                <Card card={drawCheckModal.card} isSelected={false} className="w-48 h-72 scale-110 shadow-[0_0_30px_rgba(255,255,255,0.2)]" />
+                                {/* Result Badge */}
+                                <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full font-black text-xl uppercase tracking-widest shadow-lg border-2 ${drawCheckModal.success ? 'bg-green-600 border-green-400 text-white' : 'bg-red-600 border-red-400 text-white'}`}>
+                                    {drawCheckModal.success ? (t('success') || "SUCCESS") : (t('fail') || "FAIL")}
+                                </div>
+                            </div>
+
+                            <div className="text-gray-300 font-mono text-sm">
+                                {t('player_label') || "Player"}: <span className="text-white font-bold">{drawCheckModal.playerName}</span>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* JESSE JONES DRAW MODAL */}
+            {state.currentPhase === 'jesse_jones_draw' && state.turnIndex === myPlayerIndex && (
+                <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
+                    <div className="bg-[#1a1a1a] border border-cyan-500 rounded-xl p-8 max-w-2xl w-full flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+                        <div className="text-center">
+                            <h2 className="text-3xl font-black text-cyan-400 uppercase tracking-widest mb-2">{t('jesse_jones_prompt')}</h2>
+                            <p className="text-gray-400 italic">{t('jesse_jones_desc')}</p>
+                        </div>
+
+                        <div className="flex justify-center gap-8 w-full">
+                            {/* OPTION A: DECK */}
+                            <button
+                                onClick={() => dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'deck' })}
+                                className="flex flex-col items-center gap-4 bg-gray-800 p-6 rounded-xl hover:bg-cyan-900/30 border border-transparent hover:border-cyan-500 transition-all hover:scale-105 group w-1/3"
+                            >
+                                <div className="w-24 h-36 bg-gray-700 rounded border border-gray-600 flex items-center justify-center shadow-lg group-hover:shadow-cyan-500/20">
+                                    <div className="text-4xl text-gray-500 group-hover:text-cyan-400 font-black">?</div>
+                                </div>
+                                <div className="text-xl font-bold text-white uppercase">{t('draw_deck')}</div>
+                            </button>
+
+                            {/* SEPARATOR */}
+                            <div className="flex items-center text-gray-600 font-black text-2xl">OR</div>
+
+                            {/* OPTION B: STEAL (List Players) */}
+                            <div className="flex flex-col gap-2 w-1/3">
+                                <div className="text-center text-sm text-gray-400 font-bold uppercase mb-2">{t('steal_hand_short')}</div>
+                                <div className="flex flex-col gap-2 overflow-y-auto max-h-60 pr-1">
+                                    {opponents.filter(p => !p.isDead && p.hand.length > 0).length > 0 ? (
+                                        opponents.filter(p => !p.isDead && p.hand.length > 0).map(opp => (
+                                            <button
+                                                key={opp.id}
+                                                onClick={() => dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'player', targetId: opp.id })}
+                                                className="flex items-center justify-between bg-gray-800 hover:bg-red-900/50 p-3 rounded border border-gray-700 hover:border-red-500 transition-colors group/steal"
+                                            >
+                                                <div className="font-bold text-gray-200 group-hover/steal:text-red-300">{opp.name}</div>
+                                                <div className="text-xs text-red-500 font-mono flex items-center gap-1">
+                                                    {opp.hand.length} 🃏
+                                                </div>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="text-xs text-gray-500 italic text-center py-4">No viable targets</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* KIT CARLSON SELECTION MODAL */}
+            {state.currentPhase === 'kit_carlson_discard' && state.turnIndex === myPlayerIndex && state.kitCarlsonCards && (
+                <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
+                    <div className="bg-[#1a1a1a] border border-yellow-600 rounded-xl p-8 max-w-4xl w-full flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(234,179,8,0.3)]">
+                        <div className="text-center">
+                            <h2 className="text-3xl font-black text-yellow-500 uppercase tracking-widest mb-2">
+                                {myPlayer.name} (Kit Carlson)
+                            </h2>
+                            <p className="text-gray-400 italic text-lg">
+                                {t('kit_carlson_prompt') || "Select 1 card to RETURN to the Deck."}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
+                                {t('kit_carlson_keep') || "(You keep the other 2)"}
+                            </p>
+                        </div>
+
+                        <div className="flex justify-center gap-6 flex-wrap">
+                            {state.kitCarlsonCards.map((card) => (
+                                <div
+                                    key={card.id}
+                                    onClick={() => dispatch({ type: 'SELECT_CARD', cardId: card.id })}
+                                    className="relative group transform transition-all duration-300 hover:scale-110 cursor-pointer hover:-translate-y-4"
+                                >
+                                    <Card card={card} isSelected={false} className="w-48 h-72 shadow-lg" />
+
+                                    {/* Overlay on Hover */}
+                                    <div className="absolute inset-0 bg-yellow-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg z-10">
+                                        <span className="font-black text-white px-4 py-2 border-2 border-white rounded uppercase tracking-widest bg-black/50 backdrop-blur-sm">
+                                            {t('return_to_deck') || "RETURN"}
+                                        </span>
+                                    </div>
+
+                                    {/* TOOLTIP */}
+                                    <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-56 bg-black/95 border border-yellow-600/50 p-3 rounded-lg z-[3100] hidden group-hover:block pointer-events-none shadow-2xl">
+                                        <div className="text-yellow-500 font-bold border-b border-gray-700 pb-1 mb-1 text-center">{t(card.nameKey) || card.name}</div>
+                                        <div className="text-gray-300 text-xs italic text-center leading-relaxed">{card.description || t(card.descKey)}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* EQUIPMENT REPLACEMENT MODAL */}
             <AnimatePresence>
@@ -1528,6 +1728,54 @@ export const GameBoard: React.FC = () => {
                                     {t('close') || "CLOSE"}
                                 </button>
                             </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* DEATH SCREEN OVERLAY */}
+            <AnimatePresence>
+                {myPlayer && myPlayer.isDead && !dismissedDeathScreen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="fixed inset-0 z-[10000] bg-black/90 flex flex-col items-center justify-center pointer-events-auto"
+                        onClick={(e) => {
+                            // Optional: Allow clicking to dismiss if user wants to look around immediately?
+                            // Better to have a dedicated button to avoid accidental dismissal.
+                            e.stopPropagation();
+                        }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, y: 50 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="text-center p-8 max-w-2xl"
+                        >
+                            <h1 className="text-6xl md:text-8xl font-black text-red-600 tracking-tighter uppercase mb-4 drop-shadow-[0_0_25px_rgba(220,38,38,0.8)] animate-pulse">
+                                {t('death_title') || "YOU DIED"}
+                            </h1>
+                            <p className="text-xl md:text-2xl text-gray-400 font-light mb-8 italic">
+                                "{t('death_desc') || "Your journey ends here..."}"
+                            </p>
+
+                            {/* Role Reveal */}
+                            <div className="flex flex-col items-center gap-4 mb-12">
+                                <div className="text-yellow-500 font-bold tracking-widest uppercase text-sm mb-2">{t('your_role')}</div>
+                                <div className="relative group">
+                                    <img
+                                        src={`/cards/role_${myPlayer.role.toLowerCase()}.png`}
+                                        alt={myPlayer.role}
+                                        className="w-48 rounded-lg shadow-2xl border border-white/10 grayscale group-hover:grayscale-0 transition-all duration-700"
+                                    />
+                                    <div className="text-white font-black text-2xl mt-4 uppercase tracking-widest">{t(`role_${myPlayer.role.toLowerCase()}`)}</div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setDismissedDeathScreen(true)}
+                                className="px-10 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 uppercase tracking-widest backdrop-blur-sm transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)]"
+                            >
+                                {t('spectate_mode') || "SPECTATE"}
+                            </button>
                         </motion.div>
                     </motion.div>
                 )}

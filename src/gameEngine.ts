@@ -181,8 +181,12 @@ export function handleDamage(
     let newDiscard = [...discardPile];
     let newLogs = [...logs];
 
-    // CRITICAL FIX: Spread object to avoid mutating state reference (Strict Mode Double Invocation Issue)
-    let target = { ...newPlayers[targetIndex] };
+    // CRITICAL FIX: Spread object AND hand/table to avoid mutating state reference
+    let target = {
+        ...newPlayers[targetIndex],
+        hand: [...newPlayers[targetIndex].hand],
+        table: [...newPlayers[targetIndex].table]
+    };
     // prevHp removed (unused)
 
     // 1. Apply Damage
@@ -200,7 +204,7 @@ export function handleDamage(
 
     // Character Ability: El Gringo (Steal card from attacker on hit)
     if (target.character === 'El Gringo' && damage > 0 && attackerIndex !== null && attackerIndex !== targetIndex) {
-        const attacker = newPlayers[attackerIndex];
+        const attacker = { ...newPlayers[attackerIndex], hand: [...newPlayers[attackerIndex].hand] };
         if (attacker.hand.length > 0) {
             const randIdx = Math.floor(Math.random() * attacker.hand.length);
             const stolenCard = attacker.hand[randIdx];
@@ -276,13 +280,27 @@ export function handleDeath(
     victim.hand = [];
     victim.table = [];
 
-    if (vultureIndex !== -1) {
-        // Sam takes cards
-        newPlayers[vultureIndex].hand.push(...victimCards);
-        newLogs.push(`🦅 Vulture Sam scavenges ${victimCards.length} cards from ${victim.name}.`);
+    if (vultureIndex !== -1 && newPlayers[vultureIndex].character === 'Vulture Sam') {
+        // Sam takes cards - SANITIZE IDs to prevent "Ghost Card" / Stale State bugs
+        const vultureSam = newPlayers[vultureIndex];
+
+        // Regenerate IDs for all looted cards to force React/Redux to treat them as fresh
+        const lootedCards = victimCards.map(c => ({
+            ...c,
+            id: `${c.id}_loot_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
+        }));
+
+        vultureSam.hand.push(...lootedCards);
+        newLogs.push(i18n.t('log_vulture_loot', { name: victim.name }));
+        newPlayers[vultureIndex] = vultureSam;
     } else {
         // Default: Discard all
-        newDiscard.push(...victimCards);
+        if (victimCards.length > 0) {
+            if (victimCards.length > 0) {
+                newDiscard.push(...victimCards);
+                newLogs.push(i18n.t('log_death_discard', { name: victim.name }));
+            }
+        }
     }
 
     // Bonuses / Penalties
@@ -291,7 +309,7 @@ export function handleDeath(
 
         // Reward: Any player killing an Outlaw -> Draw 3
         if (victim.role === 'Outlaw') {
-            newLogs.push(`💰 ${killer.name} collects bounty for Outlaw: Draws 3 cards!`);
+            newLogs.push(i18n.t('log_kill_outlaw'));
             for (let i = 0; i < 3; i++) {
                 const check = checkDraw(newDeck, newDiscard);
                 newDeck = check.deck;
@@ -302,7 +320,7 @@ export function handleDeath(
 
         // Penalty: Sheriff kills Deputy -> Discard All
         if (killer.role === 'Sheriff' && victim.role === 'Deputy') {
-            newLogs.push(`⚠️ SHERIFF KILLED A DEPUTY! Sheriff loses all cards!`);
+            newLogs.push(i18n.t('log_kill_deputy'));
             const penaltyCards = [...killer.hand, ...killer.table];
             killer.hand = [];
             killer.table = [];
@@ -548,11 +566,11 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     timestamp: Date.now()
                 };
 
-                logs.push(`${currentPlayer.name} checks Dynamite... Drawn: ${drawn.suit} ${drawn.value}`);
+                logs.push(i18n.t('log_dynamite_check', { name: currentPlayer.name, card: `${drawn.suit} ${drawn.value}` }));
 
                 // Dynamite explodes on Spades 2-9
                 if (exploded) {
-                    logs.push(`DYNAMITE EXPLODES! 3 Damage!`);
+                    logs.push(i18n.t('log_dynamite_exploded'));
                     currentPlayer.hp -= 3;
                     newDiscard.push(currentPlayer.table[dynamiteIdx]);
                     currentPlayer.table.splice(dynamiteIdx, 1);
@@ -565,7 +583,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         logs = deathRes.logs;
                     }
                 } else {
-                    logs.push(`Dynamite passed to next player.`);
+                    logs.push(i18n.t('log_dynamite_passed'));
                     const card = currentPlayer.table[dynamiteIdx];
                     currentPlayer.table.splice(dynamiteIdx, 1);
 
@@ -607,15 +625,15 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     timestamp: Date.now()
                 };
 
-                logs.push(`${currentPlayer.name} checks Jail... Drawn: ${drawn.suit} ${drawn.value}`);
+                logs.push(i18n.t('log_jail_check', { name: currentPlayer.name, card: `${drawn.suit} ${drawn.value}` }));
 
                 newDiscard.push(currentPlayer.table[jailIdx]);
                 currentPlayer.table.splice(jailIdx, 1);
 
                 if (escaped) {
-                    logs.push(`Escaped Jail! Turn proceeds.`);
+                    logs.push(i18n.t('log_jail_escaped'));
                 } else {
-                    logs.push(`Stayed in Jail! Turn Skipped.`);
+                    logs.push(i18n.t('log_jail_stayed'));
                     newPlayers[currentPlayerIndex] = currentPlayer;
                     return {
                         ...state,
@@ -632,6 +650,23 @@ export function gameReducer(state: GameState, action: Action): GameState {
             }
 
             // --- PHASE 2: DRAW ---
+            // JESSE JONES INTERCEPTION
+            if (currentPlayer.character === 'Jesse Jones') {
+                // Skip auto-draw. Go to choice phase.
+                newPlayers[currentPlayerIndex] = currentPlayer;
+                return {
+                    ...state,
+                    players: newPlayers,
+                    deck: newDeck,
+                    discardPile: newDiscard,
+                    logs, // Logs from dynamite/jail checks
+                    currentPhase: 'jesse_jones_draw', // NEW PHASE
+                    latestDrawCheck: latestDrawCheck || state.latestDrawCheck,
+                    hasPlayedBang: false,
+                    turnPlayedCards: []
+                };
+            }
+
             let drawCount = 2;
             if (currentPlayer.character === 'Kit Carlson') drawCount = 3;
 
@@ -643,8 +678,25 @@ export function gameReducer(state: GameState, action: Action): GameState {
             }
 
             const drawnCards = newDeck.splice(0, drawCount);
-            currentPlayer.hand = [...currentPlayer.hand, ...drawnCards];
 
+            // KIT CARLSON LOGIC: Store in temp array, don't add to hand yet
+            if (currentPlayer.character === 'Kit Carlson') {
+                return {
+                    ...state,
+                    players: newPlayers,
+                    deck: newDeck,
+                    discardPile: newDiscard,
+                    currentPhase: 'kit_carlson_discard',
+                    kitCarlsonCards: drawnCards, // Store them here
+                    logs: [...logs, `${currentPlayer.name} draws 3 cards (Kit Carlson).`],
+                    latestDrawCheck: latestDrawCheck || state.latestDrawCheck,
+                    hasPlayedBang: false,
+                    turnPlayedCards: []
+                };
+            }
+
+            // Normal Draw
+            currentPlayer.hand = [...currentPlayer.hand, ...drawnCards];
             newPlayers[currentPlayerIndex] = currentPlayer;
 
             return {
@@ -661,17 +713,24 @@ export function gameReducer(state: GameState, action: Action): GameState {
         }
 
         case 'SELECT_CARD':
-            // Kit Carlson Phase: Select 1 card to put back on deck
+            // Kit Carlson Phase: Select 1 card to put back on deck from TEMP ARRAY
             if (state.currentPhase === 'kit_carlson_discard') {
                 const player = state.players[state.turnIndex];
-                const card = player.hand.find(c => c.id === action.cardId);
+                if (!state.kitCarlsonCards) return state;
 
-                if (!card) return state;
+                const cardIdx = state.kitCarlsonCards.findIndex(c => c.id === action.cardId);
+                if (cardIdx === -1) return state;
 
-                // Remove card from hand
-                const newHand = player.hand.filter(c => c.id !== card.id);
-                // Put card back on TOP of deck
-                const newDeck = [card, ...state.deck];
+                const cardToCheck = state.kitCarlsonCards[cardIdx];
+
+                // Remove SELECTED card (it goes back to Deck)
+                const remainingCards = state.kitCarlsonCards.filter(c => c.id !== cardToCheck.id);
+
+                // Add remaining 2 cards to HAND
+                const newHand = [...player.hand, ...remainingCards];
+
+                // Put selected card back on TOP of deck
+                const newDeck = [cardToCheck, ...state.deck];
 
                 const newPlayers = [...state.players];
                 newPlayers[state.turnIndex] = { ...player, hand: newHand };
@@ -681,8 +740,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     players: newPlayers,
                     deck: newDeck,
                     currentPhase: 'play', // Proceed to play phase
+                    kitCarlsonCards: undefined, // Clear temp
                     selectedCardId: null,
-                    logs: [...state.logs, `${player.name} put a card back on the deck`]
+                    logs: [...state.logs, `${player.name} keeps 2 cards and returns 1 to the deck`]
                 };
             }
 
@@ -727,6 +787,131 @@ export function gameReducer(state: GameState, action: Action): GameState {
             }
             return { ...state, selectedCardId: action.cardId };
 
+        case 'JESSE_CHOOSE_DRAW': {
+            const player = state.players[state.turnIndex];
+            let newDeck = [...state.deck];
+            let newHand = [...player.hand];
+            let newPlayers = [...state.players];
+            const newLogs = [...state.logs];
+
+            if (action.source === 'deck') {
+                // Option A: Draw 2 from Deck (Standard)
+                if (newDeck.length < 2) {
+                    if (state.discardPile.length > 0) {
+                        newDeck = [...newDeck, ...shuffle(state.discardPile)];
+                    }
+                }
+                const drawn = newDeck.splice(0, 2);
+                newHand.push(...drawn);
+                newLogs.push(`${player.name} (Jesse Jones) draws 2 cards from Deck.`);
+            } else if (action.source === 'player' && action.targetId) {
+                // Option B: Steal 1 from Target, Draw 1 from Deck
+                const targetIdx = state.players.findIndex(p => p.id === action.targetId);
+                if (targetIdx !== -1) {
+                    const target = state.players[targetIdx];
+                    if (target.hand.length > 0) {
+                        // Random steal
+                        const randIdx = Math.floor(Math.random() * target.hand.length);
+                        const stolenCard = target.hand[randIdx];
+
+                        // Sanitize ID just in case? Usually only needed for death-transfer, but safer.
+                        // Actually, swapping hands... let's keep ID for now, simpler.
+
+                        // Remove from target
+                        const targetHand = [...target.hand];
+                        targetHand.splice(randIdx, 1);
+                        newPlayers[targetIdx] = { ...target, hand: targetHand };
+
+                        // Add to Jesse
+                        newHand.push(stolenCard);
+                        newLogs.push(`${player.name} (Jesse Jones) steals a card from ${target.name}.`);
+
+                        // Draw 2nd card from Deck
+                        if (newDeck.length < 1) {
+                            if (state.discardPile.length > 0) {
+                                newDeck = [...newDeck, ...shuffle(state.discardPile)];
+                            }
+                        }
+                        const drawn = newDeck.splice(0, 1);
+                        newHand.push(...drawn);
+                    }
+                }
+            }
+
+            newPlayers[state.turnIndex] = { ...player, hand: newHand };
+
+            return {
+                ...state,
+                players: newPlayers,
+                deck: newDeck,
+                logs: newLogs,
+                currentPhase: 'play'
+            };
+        }
+
+        case 'JESSE_CHOOSE_DRAW': {
+            const player = state.players[state.turnIndex];
+            let newDeck = [...state.deck];
+            let newHand = [...player.hand];
+            let newPlayers = [...state.players];
+            const newLogs = [...state.logs];
+
+            if (action.source === 'deck') {
+                // Option A: Draw 2 from Deck (Standard)
+                if (newDeck.length < 2) {
+                    if (state.discardPile.length > 0) {
+                        newDeck = [...newDeck, ...shuffle(state.discardPile)];
+                    }
+                }
+                const drawn = newDeck.splice(0, 2);
+                newHand.push(...drawn);
+                newLogs.push(`${player.name} (Jesse Jones) draws 2 cards from Deck.`);
+            } else if (action.source === 'player' && action.targetId) {
+                // Option B: Steal 1 from Target, Draw 1 from Deck
+                const targetIdx = state.players.findIndex(p => p.id === action.targetId);
+                if (targetIdx !== -1) {
+                    const target = state.players[targetIdx];
+                    if (target.hand.length > 0) {
+                        // Random steal
+                        const randIdx = Math.floor(Math.random() * target.hand.length);
+                        const stolenCard = target.hand[randIdx];
+
+                        // Sanitize ID just in case? Usually only needed for death-transfer, but safer.
+                        // Actually, swapping hands... let's keep ID for now, simpler.
+
+                        // Remove from target
+                        const targetHand = [...target.hand];
+                        targetHand.splice(randIdx, 1);
+                        newPlayers[targetIdx] = { ...target, hand: targetHand };
+
+                        // Add to Jesse
+                        newHand.push(stolenCard);
+                        newLogs.push(`${player.name} (Jesse Jones) steals a card from ${target.name}.`);
+
+                        // Draw 2nd card from Deck
+                        if (newDeck.length < 1) {
+                            if (state.discardPile.length > 0) {
+                                newDeck = [...newDeck, ...shuffle(state.discardPile)];
+                            }
+                        }
+                        const drawn = newDeck.splice(0, 1);
+                        newHand.push(...drawn);
+                    }
+                }
+            }
+
+            // Update player hand
+            newPlayers[state.turnIndex] = { ...player, hand: newHand };
+
+            return {
+                ...state,
+                players: newPlayers,
+                deck: newDeck,
+                logs: newLogs,
+                currentPhase: 'play'
+            };
+        }
+
         case 'PLAY_CARD': {
             const playerIndex = state.turnIndex;
             const player = state.players[playerIndex];
@@ -737,8 +922,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
             if (!card) return state;
 
-            // Prevent manual play of 'Missed'
-            if (card.effectType === 'missed') {
+            // Prevent manual play of 'Missed' (EXCEPT Calamity Janet)
+            if (card.effectType === 'missed' && player.character !== 'Calamity Janet') {
                 return { ...state, logs: [...state.logs, "❌ You cannot play 'Missed!' manually. It is used automatically when attacked."], selectedCardId: null };
             }
 
@@ -773,6 +958,25 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
                     newDiscard.push(card); // Discard the played card
                     newLog += ` put ${targetP.name} in JAIL!`;
+
+                    return {
+                        ...state,
+                        players: newPlayers,
+                        logs: [...state.logs, newLog],
+                        selectedCardId: null,
+                        discardPile: newDiscard,
+                    };
+                }
+
+                // DYNAMITE LOGIC (Status Item - No Slot Limit)
+                if (card.name === 'Dynamite') {
+                    if (newPlayers[playerIndex].table.some(c => c.name === 'Dynamite')) {
+                        return { ...state, logs: [...state.logs, "You already have Dynamite!"], selectedCardId: null };
+                    }
+                    newPlayers[playerIndex].table.push(card);
+                    newLog += ` lit the DYNAMITE!`;
+
+                    newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
 
                     return {
                         ...state,
@@ -895,7 +1099,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     };
                 }
 
-                if (card.effectType === 'bang' && action.targetId) {
+                if ((card.effectType === 'bang' || (card.effectType === 'missed' && player.character === 'Calamity Janet')) && action.targetId) {
                     // Anti-Double-Dispatch Guard: Ensure the card played is actually the selected one
                     if (state.selectedCardId !== action.cardId) {
                         return state;
@@ -919,7 +1123,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     const dist = calculateDistance(state.players, player.id, target.id, sorceScope + charScope, targetMustang + charMustang);
 
                     if (dist > player.weaponRange) {
-                        return { ...state, logs: [...state.logs, `Target out of range! (Dist: ${dist}, Range: ${player.weaponRange})`], selectedCardId: null };
+                        return { ...state, logs: [...state.logs, `ERROR_RANGE:${dist}|${player.weaponRange}`], selectedCardId: null };
                     }
 
                     // CHECK BANG LIMIT
@@ -927,7 +1131,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     const hasVolcanic = player.table.some(c => c.nameKey === 'card_volcanic_name');
                     const isWillyTheKid = player.character === 'Willy the Kid';
 
-                    if (!hasVolcanic && !isWillyTheKid && state.hasPlayedBang && card.effectType === 'bang') {
+                    if (!hasVolcanic && !isWillyTheKid && state.hasPlayedBang && (card.effectType === 'bang' || (card.effectType === 'missed' && player.character === 'Calamity Janet'))) {
                         // Feedback handled in UI, but return state unchanged here
                         return state;
                     }
@@ -986,7 +1190,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         newPlayers[playerIndex].hp += 1;
                         newLog += ` (Healed to ${newPlayers[playerIndex].hp})`;
                     } else {
-                        return { ...state, logs: [...state.logs, "HP full, cannot heal!"], selectedCardId: null };
+                        return { ...state, logs: [...state.logs, "¡PV al máximo! No curas nada."], selectedCardId: null }; // Manual translation or fix later
                     }
                 } else if (card.effectType === 'draw') {
                     const count = card.effectValue || 1;
@@ -1052,8 +1256,19 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     newLog += ` | All players healed!`;
                 } else if (card.effectType === 'general_store' || card.effectType === 'store') {
                     const aliveCount = newPlayers.filter(p => !p.isDead).length;
-                    const drawn = updatedDeck.slice(0, aliveCount);
-                    updatedDeck = updatedDeck.slice(aliveCount);
+
+                    // Fix: Reshuffle if deck empty
+                    if (updatedDeck.length < aliveCount) {
+                        if (newDiscard.length > 0) {
+                            updatedDeck = [...updatedDeck, ...shuffle(newDiscard)];
+                            newDiscard = [];
+                        }
+                    }
+
+                    // Clone to safe splice
+                    updatedDeck = [...updatedDeck];
+                    const drawn = updatedDeck.splice(0, aliveCount); // Takes up to length if less
+
 
                     newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
                     newDiscard.push(card);
@@ -1071,6 +1286,30 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         generalStoreTurnIndex: playerIndex,
                         turnPlayedCards: [...(state.turnPlayedCards || []), card]
                     };
+                } else if (card.effectType === 'duel' && action.targetId) {
+                    const targetIndex = newPlayers.findIndex(p => p.id === action.targetId);
+                    const target = newPlayers[targetIndex];
+
+                    newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
+                    newDiscard.push(card);
+                    newLog += ` challenges ${target.name} to a DUEL!`;
+
+                    return {
+                        ...state,
+                        players: newPlayers,
+                        deck: updatedDeck,
+                        discardPile: newDiscard,
+                        logs: [...state.logs, newLog],
+                        selectedCardId: null,
+                        currentPhase: 'responding',
+                        pendingAction: {
+                            type: 'duel',
+                            sourceId: player.id, // Challenger
+                            targetId: target.id, // Challenged (responds first)
+                            cardId: card.id
+                        },
+                        turnPlayedCards: [...(state.turnPlayedCards || []), card]
+                    };
                 } else if ((card.effectType === 'steal' || card.effectType === 'discard') && action.targetId) {
                     if (state.selectedCardId !== action.cardId) return state;
 
@@ -1086,7 +1325,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         const dist = calculateDistance(state.players, player.id, target.id, sorceScope + charScope, targetMustang + charMustang);
 
                         if (dist > 1) {
-                            return { ...state, logs: [...state.logs, `Target out of range for Panic!(Dist: ${dist})`], selectedCardId: null };
+                            return { ...state, logs: [...state.logs, `ERROR_RANGE:${dist}|1`], selectedCardId: null };
                         }
                     }
 
@@ -1328,9 +1567,55 @@ export function gameReducer(state: GameState, action: Action): GameState {
             let latestDrawCheck = state.latestDrawCheck;
             let responseQueue = [...(state.responseQueue || [])];
 
+            // --- DUEL LOGIC ---
+            if (pendingAction.type === 'duel') {
+                if (action.responseType === 'card') {
+                    const requiredEffect: Card['effectType'] = 'bang';
+                    const cardIndex = target.hand.findIndex(c => c.id === action.cardId && ((c.effectType as string) === requiredEffect || (target.character === 'Calamity Janet' && ((c.effectType as string) === 'bang' || (c.effectType as string) === 'missed'))));
+
+                    if (cardIndex !== -1) {
+                        const playedCard = target.hand[cardIndex];
+                        newPlayers[targetIndex] = { ...target, hand: target.hand.filter(c => c.id !== action.cardId) };
+                        newDiscard.push(playedCard);
+                        logs.push(`${target.name} retaliates with BANG! Turn passes to opponent!`);
+
+                        // SWAP ROLES for next round of Duel
+                        pendingAction = {
+                            ...pendingAction,
+                            sourceId: targetId,
+                            targetId: sourceId
+                        };
+                        return { ...state, players: newPlayers, discardPile: newDiscard, logs, pendingAction };
+                    }
+                } else if (action.responseType === 'take_hit') {
+                    // Target Loses Duel
+                    logs.push(`${target.name} loses the Duel!`);
+                    const damageRes = handleDamage(
+                        { ...state, players: newPlayers, deck: newDeck, discardPile: newDiscard, logs, currentPhase: 'play', pendingAction: undefined },
+                        targetIndex,
+                        1,
+                        sourceIndex,
+                        newDeck,
+                        newDiscard,
+                        logs
+                    );
+                    return {
+                        ...state,
+                        players: damageRes.players,
+                        deck: damageRes.deck,
+                        discardPile: damageRes.discardPile,
+                        logs: damageRes.logs,
+                        currentPhase: 'play',
+                        pendingAction: undefined
+                    };
+                }
+                // Barrel not allowed in Duel
+                return state;
+            }
+
             if (action.responseType === 'card') {
                 const isIndians = pendingAction.type === 'indians';
-                const requiredEffect = isIndians ? 'bang' : 'missed';
+                const requiredEffect: Card['effectType'] = isIndians ? 'bang' : 'missed';
 
                 // For Indians, Calamity Janet can play 'missed' as 'bang'
                 // For Bang/Gatling, Calamity Janet can play 'bang' as 'missed'
@@ -1377,7 +1662,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     // Standard Jourdonnais is simplified here
                 }
 
-                logs.push(` -> ${target.name} Barrel: ${drawnCard.value} ${drawnCard.suit} (${success ? 'AVOIDED!' : 'FAILED'})`);
+                logs.push(i18n.t('log_barrel_check', { name: target.name, card: `${drawnCard.suit} ${drawnCard.value}` }));
+                logs.push(success ? i18n.t('log_barrel_success') : i18n.t('log_barrel_fail'));
 
                 latestDrawCheck = {
                     card: drawnCard,

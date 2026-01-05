@@ -6,8 +6,6 @@ import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { LobbyScreen } from './components/LobbyScreen';
 import { GameSettings } from './types';
 
-
-
 // Inner component to access context
 const GameLayout: React.FC<{ settings: GameSettings }> = ({ settings }) => {
     const { dispatch, state } = useGame();
@@ -126,7 +124,19 @@ const GameLayout: React.FC<{ settings: GameSettings }> = ({ settings }) => {
                         }
                     }, 1200); // Tick every 1.2s
 
-                    return () => clearInterval(interval);
+                    return () => clearTimeout(interval);
+                }
+
+                // Kit Carlson Discard Phase (Bot)
+                if (state.currentPhase === 'kit_carlson_discard') {
+                    const timer = setTimeout(() => {
+                        // FIX: Use temp cards, not hand
+                        if (state.kitCarlsonCards && state.kitCarlsonCards.length > 0) {
+                            const cardToReturn = state.kitCarlsonCards[Math.floor(Math.random() * state.kitCarlsonCards.length)];
+                            dispatch({ type: 'SELECT_CARD', cardId: cardToReturn.id });
+                        }
+                    }, 1000);
+                    return () => clearTimeout(timer);
                 }
 
                 // 3. Discard Phase (Auto discard random until Hand <= HP)
