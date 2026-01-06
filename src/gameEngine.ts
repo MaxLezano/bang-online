@@ -258,6 +258,25 @@ export function handleDamage(
     return { players: newPlayers, deck: newDeck, discardPile: newDiscard, logs: newLogs };
 }
 
+// Helper for drawing cards into hand (RESHUFFLES if needed, does NOT discard drawn cards)
+function drawCardsFromDeck(deck: Card[], discardPile: Card[], count: number): { drawn: Card[], deck: Card[], discardPile: Card[] } {
+    let newDeck = [...deck];
+    let newDiscard = [...discardPile];
+    const drawn: Card[] = [];
+
+    for (let i = 0; i < count; i++) {
+        if (newDeck.length === 0) {
+            if (newDiscard.length === 0) break; // No cards left anywhere
+            newDeck = shuffle(newDiscard);
+            newDiscard = [];
+        }
+        if (newDeck.length > 0) {
+            drawn.push(newDeck.shift()!);
+        }
+    }
+    return { drawn, deck: newDeck, discardPile: newDiscard };
+}
+
 // Extracted Death Logic to ensure Vulture Sam works for ALL deaths (Dynamite, etc)
 export function handleDeath(
     state: Partial<GameState> & { players: Player[], deck: Card[], discardPile: Card[], logs: string[] },
@@ -310,12 +329,10 @@ export function handleDeath(
         // Reward: Any player killing an Outlaw -> Draw 3
         if (victim.role === 'Outlaw') {
             newLogs.push(i18n.t('log_kill_outlaw'));
-            for (let i = 0; i < 3; i++) {
-                const check = checkDraw(newDeck, newDiscard);
-                newDeck = check.deck;
-                newDiscard = check.discardPile;
-                killer.hand.push(check.drawnCard);
-            }
+            const drawRes = drawCardsFromDeck(newDeck, newDiscard, 3);
+            newDeck = drawRes.deck;
+            newDiscard = drawRes.discardPile;
+            killer.hand.push(...drawRes.drawn);
         }
 
         // Penalty: Sheriff kills Deputy -> Discard All
