@@ -1467,7 +1467,7 @@ export const GameBoard: React.FC = () => {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        className="fixed inset-0 z-[4000] flex items-center justify-center pointer-events-none"
+                        className="fixed inset-0 z-[6000] flex items-center justify-center pointer-events-none"
                     >
                         <div className="bg-black/90 border-2 border-white/20 p-6 rounded-2xl flex flex-col items-center gap-4 shadow-2xl backdrop-blur-md">
                             <h2 className="text-2xl font-black text-white uppercase tracking-widest border-b border-gray-700 pb-2 w-full text-center">

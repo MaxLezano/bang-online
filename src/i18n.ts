@@ -44,6 +44,14 @@ i18n
                     wanted_title: "WANTED",
                     choose_legend: "CHOOSE YOUR LEGEND",
                     select: "SELECT",
+                    join_room_title: "JOIN ROOM",
+                    cancel: "CANCEL",
+                    join_action: "JOIN",
+                    connecting: "CONNECTING...",
+                    total_players: "TOTAL",
+                    human_player: "Human Player",
+                    waiting_for_host: "Waiting for Host...",
+                    room_code_input_label: "ROOM CODE",
 
                     // Roles
                     role_admin: "Sheriff",
@@ -486,6 +494,16 @@ i18n
                     card_scope_desc: "Ves a otros a distancia -1.",
                     card_barrel_desc: "¡Desenfundar! al ser atacado para evitar.",
                     card_jail_desc: "Pierdes turno a menos que Desenfudes Corazones.",
+
+                    // New Lobby Keys
+                    join_room_title: "UNIRSE A SALA",
+                    cancel: "CANCELAR",
+                    join_action: "UNIRSE",
+                    connecting: "CONECTANDO...",
+                    total_players: "TOTAL",
+                    human_player: "Jugador Humano",
+                    waiting_for_host: "Esperando al Anfitrión...",
+                    room_code_input_label: "CÓDIGO DE SALA",
 
 
                     card_alijo_desc: "Roba una carta cuando eres objetivo de un Bang!.",

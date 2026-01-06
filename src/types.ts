@@ -92,6 +92,8 @@ export interface GameSettings {
     mode: 'SINGLE' | 'MULTIPLAYER';
     playerCount: number;
     botCount: number;
+    roomId?: string;
+    isHost?: boolean;
 }
 
 export type Action =

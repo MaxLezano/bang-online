@@ -259,22 +259,31 @@ export function handleDamage(
 }
 
 // Helper for drawing cards into hand (RESHUFFLES if needed, does NOT discard drawn cards)
-function drawCardsFromDeck(deck: Card[], discardPile: Card[], count: number): { drawn: Card[], deck: Card[], discardPile: Card[] } {
+// Helper for drawing cards into hand (RESHUFFLES if needed, does NOT discard drawn cards)
+function drawCardsFromDeck(deck: Card[], discardPile: Card[], count: number): { drawn: Card[], deck: Card[], discardPile: Card[], reshuffled: boolean } {
     let newDeck = [...deck];
     let newDiscard = [...discardPile];
     const drawn: Card[] = [];
+    let reshuffled = false;
 
     for (let i = 0; i < count; i++) {
         if (newDeck.length === 0) {
             if (newDiscard.length === 0) break; // No cards left anywhere
             newDeck = shuffle(newDiscard);
             newDiscard = [];
+            reshuffled = true;
         }
         if (newDeck.length > 0) {
             drawn.push(newDeck.shift()!);
         }
     }
-    return { drawn, deck: newDeck, discardPile: newDiscard };
+    return { drawn, deck: newDeck, discardPile: newDiscard, reshuffled };
+}
+
+// Helper to calculate effective weapon range dynamically (fixes caching bugs)
+export function getEffectiveRange(player: Player): number {
+    const weapon = player.table.find(c => c.subType === 'Weapon');
+    return weapon?.range || 1;
 }
 
 // Extracted Death Logic to ensure Vulture Sam works for ALL deaths (Dynamite, etc)
@@ -330,6 +339,9 @@ export function handleDeath(
         if (victim.role === 'Outlaw') {
             newLogs.push(i18n.t('log_kill_outlaw'));
             const drawRes = drawCardsFromDeck(newDeck, newDiscard, 3);
+            if (drawRes.reshuffled) {
+                newLogs.push(i18n.t('log_deck_reshuffled'));
+            }
             newDeck = drawRes.deck;
             newDiscard = drawRes.discardPile;
             killer.hand.push(...drawRes.drawn);
@@ -1011,7 +1023,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         newPlayers[playerIndex].table.splice(existingWeaponIdx, 1);
                     }
                     newPlayers[playerIndex].table.push(card);
-                    newPlayers[playerIndex].weaponRange = card.range || 1;
+                    // FIX: Recalculate range dynamically to ensure it matches effective range
+                    newPlayers[playerIndex].weaponRange = getEffectiveRange(newPlayers[playerIndex]);
                 } else {
                     // Gear Logic (Limit 2)
                     const existingGears = newPlayers[playerIndex].table.filter(c => c.subType !== 'Weapon');
@@ -1139,8 +1152,11 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
                     const dist = calculateDistance(state.players, player.id, target.id, sorceScope + charScope, targetMustang + charMustang);
 
-                    if (dist > player.weaponRange) {
-                        return { ...state, logs: [...state.logs, `ERROR_RANGE:${dist}|${player.weaponRange}`], selectedCardId: null };
+                    // FIX: Use dynamic range calculation instead of potentially stale weaponRange property
+                    const effectiveRange = getEffectiveRange(player);
+
+                    if (dist > effectiveRange) {
+                        return { ...state, logs: [...state.logs, `ERROR_RANGE:${dist}|${effectiveRange}`], selectedCardId: null };
                     }
 
                     // CHECK BANG LIMIT
