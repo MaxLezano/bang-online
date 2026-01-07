@@ -203,6 +203,7 @@ i18n
                     card_barrel_name: "Barrel",
                     card_jail_name: "Jail",
                     card_dynamite_name: "Dynamite",
+                    card_appaloosa_name: "Appaloosa",
 
                     // Card Desc
                     card_bang_desc: "Attack a player in range.",
@@ -227,6 +228,7 @@ i18n
                     card_barrel_desc: "Draw! when attacked to avoid.",
                     card_jail_desc: "Skip turn unless you Draw! Hearts.",
                     card_dynamite_desc: "Draw! If Spades 2-9, take 3 damage.",
+                    card_appaloosa_desc: "See others at distance -1.",
                     card_alijo_desc: "Draw a card when targeted by a Bang!.",
 
                     // Modals
@@ -477,6 +479,7 @@ i18n
                     card_barrel_name: "Barril",
                     card_jail_name: "Prisión",
                     card_dynamite_name: "Dinamita",
+                    card_appaloosa_name: "Appaloosa",
                     card_alijo_name: "Alijo",
 
                     // Card Desc
@@ -495,6 +498,7 @@ i18n
                     card_volcanic_desc: "Alcance 1. Juega BANGs ilimitados.",
                     card_dynamite: "DINAMITA",
                     card_dynamite_desc: "Al inicio de tu turno: Si sacas Espadas 2-9, ¡PIERDES 3 VIDAS! Si no, pasa al vecino.",
+                    card_appaloosa_desc: "Ves a los demás a distancia -1.",
                     card_schofield_desc: "Alcance 2.",
                     card_remington_desc: "Alcance 3.",
                     card_rev_carabine_desc: "Alcance 4.",

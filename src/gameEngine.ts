@@ -102,6 +102,8 @@ const generateDeck = (): Card[] => {
     add(2, { nameKey: 'card_mustang_name', descKey: 'card_mustang_desc', name: 'Mustang', type: 'Equipment', subType: 'Utility', effectType: 'mustang', effectValue: 1 }, ['hearts'], [8, 9]);
     add(1, { nameKey: 'card_scope_name', descKey: 'card_scope_desc', name: 'Scope', type: 'Equipment', subType: 'Utility', effectType: 'scope', effectValue: 1 }, ['spades'], [14]);
     add(1, { nameKey: 'card_scope_name', descKey: 'card_scope_desc', name: 'Scope', type: 'Equipment', subType: 'Utility', effectType: 'scope', effectValue: 1 }, ['spades'], [14]);
+    // Appaloosa - Same effect as Scope
+    add(1, { nameKey: 'card_appaloosa_name', descKey: 'card_appaloosa_desc', name: 'Appaloosa', type: 'Equipment', subType: 'Utility', effectType: 'scope', effectValue: 1 }, ['spades'], [8]); // S:8 is typical for Appaloosa
     add(2, { nameKey: 'card_barrel_name', descKey: 'card_barrel_desc', name: 'Barrel', type: 'Equipment', subType: 'Defense', effectType: 'equip' }, ['spades'], [12, 13]);
     // Alijo (Hideout) - Custom Card
     add(2, { nameKey: 'card_alijo_name', descKey: 'card_alijo_desc', name: 'Alijo', type: 'Equipment', subType: 'Utility', effectType: 'hideout' }, ['clubs', 'spades'], [13, 9]);
