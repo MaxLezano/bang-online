@@ -43,9 +43,31 @@ const GameLayout: React.FC<{ settings: GameSettings }> = ({ settings }) => {
             if (currentPlayer.isBot && !currentPlayer.isDead) {
                 // 1. Draw Phase
                 if (state.currentPhase === 'draw') {
+                    // Check if Jesse Jones (special phase transition happens in Reducer, but if we are here, standard start turn)
                     const timer = setTimeout(() => {
                         dispatch({ type: 'START_TURN' });
                     }, 1000);
+                    return () => clearTimeout(timer);
+                }
+
+                // 1.5 Jesse Jones Draw Phase (Bot)
+                if (state.currentPhase === 'jesse_jones_draw') {
+                    const timer = setTimeout(() => {
+                        // Strategy: 50% chance to steal from random player, 50% from deck
+                        // For simplicity, let's just draw from deck for now (or random)
+                        if (Math.random() > 0.5) {
+                            dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'deck' });
+                        } else {
+                            // Try to steal
+                            const opponents = state.players.filter(p => !p.isDead && p.id !== currentPlayer.id && p.hand.length > 0);
+                            if (opponents.length > 0) {
+                                const target = opponents[Math.floor(Math.random() * opponents.length)];
+                                dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'player', targetId: target.id });
+                            } else {
+                                dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'deck' });
+                            }
+                        }
+                    }, 1200);
                     return () => clearTimeout(timer);
                 }
 

@@ -15,7 +15,7 @@ export interface Card {
     suit: Suit;
     value: CardValue;
     // effectType covers all card logic keys
-    effectType: 'bang' | 'missed' | 'heal' | 'beer' | 'draw' | 'discard' | 'steal' | 'equip' | 'damage_all' | 'duel' | 'indians' | 'saloon' | 'store' | 'general_store' | 'jail' | 'dynamite' | 'scope' | 'mustang' | 'barrel' | 'hideout';
+    effectType: 'bang' | 'missed' | 'heal' | 'beer' | 'draw' | 'discard' | 'steal' | 'equip' | 'damage_all' | 'duel' | 'indians' | 'saloon' | 'store' | 'general_store' | 'jail' | 'dynamite' | 'scope' | 'mustang' | 'barrel' | 'hideout' | 'sight_mod' | 'equipment';
     effectValue?: number;
     range?: number;
     description: string;
@@ -66,6 +66,7 @@ export interface GameState {
         targetId: string;
         cardId?: string; // Card used to attack
         barrelUsed?: boolean; // If target tried barrel already
+        missedPlayed?: number; // For Slab the Killer: Tracks how many missed cards played
     };
     responseQueue?: {
         targetId: string;

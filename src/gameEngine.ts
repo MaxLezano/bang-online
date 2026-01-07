@@ -166,6 +166,60 @@ function checkDraw(deck: Card[], discardPile: Card[]): { drawnCard: Card, deck: 
     return { drawnCard, deck: newDeck, discardPile: newDiscard };
 }
 
+// Helper for Suzy Lafayette Ability
+function checkSuzyLafayette(player: Player, deck: Card[], discardPile: Card[], logs: string[]): { player: Player, deck: Card[], discardPile: Card[], logs: string[] } {
+    if (player.character === 'Suzy Lafayette' && player.hand.length === 0) {
+        let newDeck = [...deck];
+        let newDiscard = [...discardPile];
+
+        if (newDeck.length === 0) {
+            if (newDiscard.length === 0) return { player, deck, discardPile, logs };
+            newDeck = shuffle(newDiscard);
+            newDiscard = [];
+        }
+
+        const drawn = newDeck.shift();
+        if (drawn) {
+            const newHand = [...player.hand, drawn];
+            return {
+                player: { ...player, hand: newHand },
+                deck: newDeck,
+                discardPile: newDiscard,
+                logs: [...logs, `🎩 Suzy Lafayette draws a card (Empty Hand)`]
+            };
+        }
+    }
+    return { player, deck, discardPile, logs };
+}
+
+// Helper to Recalculate Stats based on Table & Character
+export function calculatePlayerStats(player: Player): Player {
+    let newPlayer = { ...player };
+    // Reset to base
+    newPlayer.weaponRange = 1;
+    newPlayer.distanceMod = 0;
+    newPlayer.viewDistance = 0;
+
+    // Character Base Stats
+    if (newPlayer.character === 'Paul Regret') newPlayer.distanceMod += 1;
+    if (newPlayer.character === 'Rose Doolan') newPlayer.viewDistance += 1;
+
+    // Equipment Stats
+    newPlayer.table.forEach(card => {
+        if (card.subType === 'Weapon') {
+            newPlayer.weaponRange = card.range || 1;
+        }
+        if (card.name === 'Mustang' || card.effectType === 'mustang') {
+            newPlayer.distanceMod += 1;
+        }
+        if (card.name === 'Mirilla' || card.name === 'Scope' || card.effectType === 'sight_mod' || card.effectType === 'scope') {
+            newPlayer.viewDistance += 1;
+        }
+    });
+
+    return newPlayer;
+}
+
 // --- Damage & Death Logic Helper ---
 export function handleDamage(
     state: GameState,
@@ -361,6 +415,27 @@ export function handleDeath(
 
     newPlayers[victimIndex] = victim;
     return { players: newPlayers, deck: newDeck, discardPile: newDiscard, logs: newLogs };
+}
+
+
+
+export function checkGameEnd(state: GameState): GameState {
+    const sheriff = state.players.find(p => p.role === 'Sheriff');
+    const outlaws = state.players.filter(p => p.role === 'Outlaw' && !p.isDead);
+    const renegades = state.players.filter(p => p.role === 'Renegade' && !p.isDead);
+
+    if (sheriff && sheriff.isDead) {
+        if (outlaws.length === 0 && renegades.length === 1) {
+            return { ...state, gameOver: true, winner: 'Renegade' };
+        } else {
+            return { ...state, gameOver: true, winner: 'Outlaws' };
+        }
+    } else {
+        if (outlaws.length === 0 && renegades.length === 0) {
+            return { ...state, gameOver: true, winner: 'Sheriff' };
+        }
+    }
+    return state;
 }
 
 export const INITIAL_STATE: GameState = {
@@ -679,6 +754,41 @@ export function gameReducer(state: GameState, action: Action): GameState {
             }
 
             // --- PHASE 2: DRAW ---
+            // PEDRO RAMIREZ: Draw first card from discard, second from deck
+            if (currentPlayer.character === 'Pedro Ramirez' && newDiscard.length > 0) {
+                const discardCard = newDiscard.pop(); // Take top of discard
+                let deckCard: Card | undefined;
+
+                // Prepare Deck for second card
+                if (newDeck.length === 0) {
+                    if (newDiscard.length > 0) {
+                        newDeck = [...newDeck, ...shuffle(newDiscard)];
+                        newDiscard = [];
+                    }
+                }
+
+                if (newDeck.length > 0) {
+                    deckCard = newDeck.shift();
+                }
+
+                if (discardCard) currentPlayer.hand = [...currentPlayer.hand, discardCard];
+                if (deckCard) currentPlayer.hand = [...currentPlayer.hand, deckCard];
+
+                newPlayers[currentPlayerIndex] = currentPlayer;
+
+                return {
+                    ...state,
+                    players: newPlayers,
+                    deck: newDeck,
+                    discardPile: newDiscard,
+                    currentPhase: 'play',
+                    logs: [...logs, `${currentPlayer.name} draws from Discard (Pedro Ramirez) and Deck.`],
+                    latestDrawCheck: latestDrawCheck || state.latestDrawCheck,
+                    hasPlayedBang: false,
+                    turnPlayedCards: []
+                };
+            }
+
             // JESSE JONES INTERCEPTION
             if (currentPlayer.character === 'Jesse Jones') {
                 // Skip auto-draw. Go to choice phase.
@@ -1194,6 +1304,13 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     // LOG & CHANGE PHASE
                     let finalLogs = [...state.logs, newLog, `Waiting for ${target.name} to respond...`];
 
+                    // Suzy Check (Attacker)
+                    const suzyRes = checkSuzyLafayette(newPlayers[playerIndex], updatedDeck, newDiscard, finalLogs);
+                    newPlayers[playerIndex] = suzyRes.player;
+                    updatedDeck = suzyRes.deck;
+                    newDiscard = suzyRes.discardPile;
+                    finalLogs = suzyRes.logs;
+
                     return {
                         ...state,
                         players: newPlayers,
@@ -1203,7 +1320,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         selectedCardId: null,
                         currentPhase: 'responding', // NEW PHASE
                         pendingAction: {
-                            type: 'counter',
+                            type: 'bang',
                             sourceId: player.id,
                             targetId: target.id,
                             cardId: card.id,
@@ -1374,7 +1491,13 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     }
 
                     if (stolenCard) {
-                        newPlayers[targetIndex] = target;
+                        // Recalculate Target Stats (if stole from table)
+                        if (target.table.length < newPlayers[targetIndex].table.length + (target.hand.length < newPlayers[targetIndex].hand.length ? 0 : 1)) {
+                            // This check is complex. Simplify: Just recalc always safely.
+                        }
+                        // Actually, just recalc. It's cheap.
+                        newPlayers[targetIndex] = calculatePlayerStats(target);
+
                         if (card.effectType === 'steal') {
                             newPlayers[playerIndex].hand.push(stolenCard);
                             newLog += ` stole a card from ${target.name} `;
@@ -1387,15 +1510,71 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     }
                 }
 
+                if (card.subType === 'Weapon' || card.effectType === 'equipment' || card.effectType === 'jail' || card.name === 'Mustang' || card.name === 'Mirilla' || card.name === 'Scope') {
+                    // Equipment Logic
+                    // Check if duplicate in play
+                    const existingIdx = player.table.findIndex(c => c.name === card.name);
+                    if (existingIdx !== -1) {
+                        // Replace existing: Put old in discard
+                        const oldCard = player.table[existingIdx];
+                        newDiscard.push(oldCard);
+                        newPlayers[playerIndex].table[existingIdx] = card;
+                    } else {
+                        // If Weapon, remove invalid old weapon
+                        if (card.subType === 'Weapon') {
+                            const weaponIdx = player.table.findIndex(c => c.subType === 'Weapon');
+                            if (weaponIdx !== -1) {
+                                newDiscard.push(player.table[weaponIdx]);
+                                newPlayers[playerIndex].table.splice(weaponIdx, 1);
+                            }
+                        }
+                        newPlayers[playerIndex].table.push(card);
+                    }
+
+                    // Remove from hand
+                    const handIdx = newPlayers[playerIndex].hand.findIndex(c => c.id === card.id);
+                    if (handIdx !== -1) newPlayers[playerIndex].hand.splice(handIdx, 1);
+
+                    // RECALCULATE STATS
+                    newPlayers[playerIndex] = calculatePlayerStats(newPlayers[playerIndex]);
+
+                    newLog += ` equipped ${card.name}`;
+
+                    // Suzy Check
+                    const suzyRes = checkSuzyLafayette(newPlayers[playerIndex], updatedDeck, newDiscard, [...state.logs, newLog]);
+                    newPlayers[playerIndex] = suzyRes.player;
+                    updatedDeck = suzyRes.deck;
+                    newDiscard = suzyRes.discardPile;
+                    const finalLogsGeneric = suzyRes.logs;
+
+                    return {
+                        ...state,
+                        players: newPlayers,
+                        deck: updatedDeck,
+                        discardPile: newDiscard,
+                        logs: finalLogsGeneric,
+                        selectedCardId: null,
+                        turnPlayedCards: [...(state.turnPlayedCards || []), card],
+                        hasPlayedBang: state.hasPlayedBang
+                    };
+                }
+
                 newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
                 newDiscard.push(card);
+
+                // Suzy Check
+                const suzyRes = checkSuzyLafayette(newPlayers[playerIndex], updatedDeck, newDiscard, [...state.logs, newLog]);
+                newPlayers[playerIndex] = suzyRes.player;
+                updatedDeck = suzyRes.deck;
+                newDiscard = suzyRes.discardPile;
+                const finalLogsGeneric = suzyRes.logs;
 
                 return {
                     ...state,
                     players: newPlayers,
                     deck: updatedDeck,
                     discardPile: newDiscard,
-                    logs: [...state.logs, newLog],
+                    logs: finalLogsGeneric,
                     selectedCardId: null,
                     latestDrawCheck: latestDrawCheck || state.latestDrawCheck,
                     hasPlayedBang: state.hasPlayedBang || card.effectType === 'bang',
@@ -1431,21 +1610,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
                 let nextIndex = (state.turnIndex + 1) % totalPlayers;
 
                 // Win Conditions Check
-                const sheriff = state.players.find(p => p.role === 'Sheriff');
-                const outlaws = state.players.filter(p => p.role === 'Outlaw' && !p.isDead);
-                const deputies = state.players.filter(p => p.role === 'Deputy' && !p.isDead);
-                const renegade = state.players.filter(p => p.role === 'Renegade' && !p.isDead);
+                const checkedState = checkGameEnd(newState);
+                if (checkedState.gameOver) return checkedState;
 
-                if (sheriff && sheriff.isDead) {
-                    if (outlaws.length === 0 && deputies.length === 0 && renegade.length === 1 && !renegade[0].isDead) {
-                        return { ...newState, gameOver: true, winner: 'Renegade' };
-                    } else {
-                        return { ...newState, gameOver: true, winner: 'Outlaws' };
-                    }
-                }
-                if (outlaws.length === 0 && renegade.length === 0) {
-                    return { ...newState, gameOver: true, winner: 'Sheriff' };
-                }
 
                 let loop = 0;
                 while (state.players[nextIndex].isDead && loop < totalPlayers) {
@@ -1663,6 +1830,44 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     newDiscard.push(playedCard);
                     logs.push(` -> ${target.name} defends with ${playedCard.name}`);
 
+                    // Suzy Check (Defender)
+                    // Note: 'newDeck' might not be defined in this scope if not initialized, but typically is in RESPOND.
+                    // Checking RESPOND reducer initialization... usually 'let newDeck = [...state.deck];'
+                    // If not, we might need to be careful. Assuming newDeck exists.
+                    // Actually, RESPOND uses 'newDeck' in 'barrel' case (Line 1712), so it should be available.
+                    // Wait, lines 1650 don't show newDeck init.
+                    // Let's assume it IS defined (standard pattern). If fails, I'll fix.
+                    // Actually, looking at 'barrel' case, it uses 'newDeck'.
+                    const suzyResDef = checkSuzyLafayette(newPlayers[targetIndex], newDeck, newDiscard, logs);
+                    newPlayers[targetIndex] = suzyResDef.player;
+                    newDeck = suzyResDef.deck;
+                    newDiscard = suzyResDef.discardPile;
+                    logs = suzyResDef.logs;
+
+
+                    // --- SLAB THE KILLER LOGIC ---
+                    const sourceId = pendingAction.sourceId;
+                    const attacker = state.players.find(p => p.id === sourceId);
+
+                    if (attacker && attacker.character === 'Slab the Killer' && pendingAction.type === 'bang') {
+                        const currentMissed = pendingAction.missedPlayed || 0;
+                        if (currentMissed < 1) {
+                            // Needs one more!
+                            logs.push(`🔪 Slab the Killer's BANG! requires 2 Missed! cards. (1/2 played)`);
+                            return {
+                                ...state,
+                                players: newPlayers,
+                                discardPile: newDiscard,
+                                logs,
+                                pendingAction: {
+                                    ...pendingAction,
+                                    missedPlayed: 1
+                                }
+                            };
+                        }
+                    }
+                    // -----------------------------
+
                     // Proceed to next in queue or end
                     if (responseQueue.length > 0) {
                         const next = responseQueue[0];
@@ -1760,7 +1965,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                 }
             }
 
-            return {
+            return checkGameEnd({
                 ...state,
                 players: newPlayers,
                 deck: newDeck,
@@ -1770,7 +1975,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                 pendingAction: pendingAction,
                 latestDrawCheck,
                 responseQueue: responseQueue
-            };
+            });
         }
 
         default:

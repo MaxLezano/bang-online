@@ -3,6 +3,7 @@ import { useGame } from '../GameContext';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
+import { calculateDistance } from '../gameEngine';
 
 export const GameBoard: React.FC = () => {
     const { state, dispatch } = useGame();
@@ -56,29 +57,9 @@ export const GameBoard: React.FC = () => {
     // NEW: Death Screen State
     const [dismissedDeathScreen, setDismissedDeathScreen] = React.useState(false);
 
-    // NEW: Draw Check Modal (Dynamite/Jail)
-    const [drawCheckModal, setDrawCheckModal] = React.useState<{ card: any; reason: string; success: boolean; playerName: string } | null>(null);
 
-    // Effect: Listen for new Draw Check
-    React.useEffect(() => {
-        if (state.latestDrawCheck && Date.now() - state.latestDrawCheck.timestamp < 3000) {
-            const player = state.players.find(p => p.id === state.latestDrawCheck?.playerId);
-            if (player) {
-                setDrawCheckModal({
-                    card: state.latestDrawCheck.card,
-                    reason: state.latestDrawCheck.reason,
-                    success: state.latestDrawCheck.success,
-                    playerName: player.name
-                });
 
-                // Auto hide after 3 seconds
-                const timer = setTimeout(() => {
-                    setDrawCheckModal(null);
-                }, 3000);
-                return () => clearTimeout(timer);
-            }
-        }
-    }, [state.latestDrawCheck]);
+
 
 
 
@@ -160,7 +141,7 @@ export const GameBoard: React.FC = () => {
             }
 
             // GEAR (Non-Weapon)
-            const gears = myPlayer.table.filter(c => c.subType !== 'Weapon');
+            const gears = myPlayer.table.filter(c => c.type === 'Equipment' && c.subType !== 'Weapon');
 
             // Check for Duplicates first
             if (myPlayer.table.some(c => c.name === card.name)) {
@@ -352,7 +333,7 @@ export const GameBoard: React.FC = () => {
                 if (card.subType === 'Weapon') {
                     // Auto-replace
                 } else if (card.type === 'Equipment') {
-                    const gears = myPlayer.table.filter(c => c.subType !== 'Weapon');
+                    const gears = myPlayer.table.filter(c => c.type === 'Equipment' && c.subType !== 'Weapon');
                     if (gears.length >= 2) {
                         if (!window.confirm(`Gear slots full. Replace ${gears[0].name}?`)) return;
                     }
@@ -370,7 +351,7 @@ export const GameBoard: React.FC = () => {
         if (slotType === 'Weapon' && card.subType === 'Weapon') {
             dispatch({ type: 'PLAY_CARD', cardId: card.id, targetId: myPlayer.id });
         } else if (slotType === 'Gear' && card.type === 'Equipment' && card.subType !== 'Weapon') {
-            const gears = myPlayer.table.filter(c => c.subType !== 'Weapon');
+            const gears = myPlayer.table.filter(c => c.type === 'Equipment' && c.subType !== 'Weapon');
             if (gears.length >= 2) {
                 if (!window.confirm(`Gear slots full. Replace ${gears[0].name}?`)) return;
             }
@@ -768,9 +749,10 @@ export const GameBoard: React.FC = () => {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                        className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer"
+                        onClick={() => setShowDraw(false)}
                     >
-                        <div className="flex flex-col items-center gap-16 pt-10">
+                        <div className="flex flex-col items-center gap-16 pt-10 pointer-events-none">
                             <h2 className="text-3xl font-bold text-white uppercase tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
                                 {t('checking') || 'Drawing for'} {drawAnim.reason.toUpperCase()}...
                             </h2>
@@ -784,13 +766,14 @@ export const GameBoard: React.FC = () => {
                                 initial={{ scale: 2, opacity: 0, rotate: -15 }}
                                 animate={{ scale: 1, opacity: 1, rotate: -15 }}
                                 transition={{ delay: 0.5, type: 'spring' }}
-                                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-8 rounded-xl px-8 py-2 text-6xl font-black uppercase tracking-tighter shadow-2xl backdrop-blur-none whitespace-nowrap ${drawAnim.success
-                                    ? 'border-green-500 text-green-500 shadow-[0_0_50px_rgba(34,197,94,0.5)]'
-                                    : 'border-red-600 text-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)]'
+                                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-8 rounded-xl px-8 py-2 text-6xl font-black uppercase tracking-tighter shadow-2xl backdrop-blur-sm whitespace-nowrap transform -rotate-12 ${drawAnim.success
+                                    ? 'border-green-500 text-green-500 bg-black/80 shadow-[0_0_50px_rgba(34,197,94,0.5)]'
+                                    : 'border-red-600 text-red-600 bg-black/80 shadow-[0_0_50px_rgba(220,38,38,0.5)]'
                                     }`}
                             >
                                 {drawAnim.success ? (t('success') || 'PASSED') : (t('failed') || 'FAILED')}
                             </motion.div>
+                            <div className="text-sm text-gray-400 mt-4 animate-pulse">(Click to dismiss)</div>
                         </div>
                     </motion.div>
                 )}
@@ -855,10 +838,41 @@ export const GameBoard: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Hand & Range Badges - LARGER & CLEARER */}
-                        <div className="flex justify-between w-full text-xs text-gray-400 font-bold font-mono px-3 mt-2 bg-black/80 rounded py-1.5 border border-gray-800 shadow-sm">
-                            <span className="flex items-center gap-1.5" title={t('cards_in_hand')}>🃏 <span className="text-white text-lg">{opp.hand.length}</span></span>
-                            <span className="flex items-center gap-1.5" title={t('distance_tooltip')}>⌖ <span className="text-cyan-400 text-lg">{opp.weaponRange}</span></span>
+                        {/* Hand, My Reach, His Reach - RELATIVE CALCS */}
+                        <div className="flex justify-between w-full text-xs text-gray-400 font-bold font-mono px-2 mt-2 bg-black/80 rounded py-1.5 border border-gray-800 shadow-sm">
+                            {/* Hand */}
+                            <span className="flex items-center gap-1" title={t('cards_in_hand')}>
+                                <img src="/icons/cards.svg" alt="Cards" className="w-4 h-4 invert" />
+                                <span className="text-white text-lg">{opp.hand.length}</span>
+                            </span>
+
+                            {/* MY REACH TO HIM (Vision) */}
+                            {(() => {
+                                const dist = calculateDistance(state.players, myPlayer.id, opp.id, (myPlayer.viewDistance || 0), (opp.distanceMod || 0));
+                                const bonus = (myPlayer.weaponRange || 1) - 1;
+                                const val = Math.max(1, dist - bonus);
+                                const inRange = val <= 1;
+                                return (
+                                    <span className="flex items-center gap-1" title={t('distance_tooltip')}>
+                                        <img src="/icons/scope.svg" alt="My Reach" className={`w-4 h-4 ${inRange ? 'opacity-100' : 'opacity-50'}`} />
+                                        <span className={`text-lg ${inRange ? 'text-green-500' : 'text-red-500'}`}>{val}</span>
+                                    </span>
+                                );
+                            })()}
+
+                            {/* HIS REACH TO ME (Threat) */}
+                            {(() => {
+                                const dist = calculateDistance(state.players, opp.id, myPlayer.id, (opp.viewDistance || 0), (myPlayer.distanceMod || 0));
+                                const bonus = (opp.weaponRange || 1) - 1;
+                                const val = Math.max(1, dist - bonus);
+                                const inRange = val <= 1;
+                                return (
+                                    <span className="flex items-center gap-1" title={t('label_weapon_range')}>
+                                        <img src="/icons/gun.svg" alt="His Reach" className={`w-4 h-4 invert ${inRange ? 'opacity-100' : 'opacity-50'}`} />
+                                        <span className={`text-lg ${inRange ? 'text-red-500 animate-pulse' : 'text-green-500'}`}>{val}</span>
+                                    </span>
+                                );
+                            })()}
                         </div>
 
                         {/* Equipped Cards Row */}
@@ -926,8 +940,12 @@ export const GameBoard: React.FC = () => {
                                     <span className="text-red-400 font-mono">{opp.hp}/{opp.maxHp}</span>
                                 </div>
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-gray-500">{t('range') || "Range"}:</span>
+                                    <span className="text-gray-500">{t('label_weapon_range') || "Alcance"}:</span>
                                     <span className="text-cyan-400 font-mono">{opp.weaponRange}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-gray-500">{t('label_defense') || "Distancia"}:</span>
+                                    <span className="text-purple-400 font-mono">{1 + (opp.distanceMod || 0)}</span>
                                 </div>
                                 {/* Show Equipment Icons if any */}
                                 {opp.table.length > 0 && (
@@ -1039,12 +1057,27 @@ export const GameBoard: React.FC = () => {
                         </div>
 
 
+                        {/* Range / Defense Stats - SIMPLIFIED (2 VALUES ONLY) */}
+                        <div className="flex gap-4 text-xs font-mono font-bold text-gray-400 ml-4">
+                            {/* Weapon Range (TOTAL REACH) */}
+                            <span className="flex flex-col items-center gap-0.5" title={`${t('label_weapon_range')}: ${myPlayer.weaponRange} + ${t('card_scope_desc')}: ${myPlayer.viewDistance || 0}`}>
+                                <span className="text-[10px] text-cyan-500 uppercase tracking-widest">{t('label_weapon_range') || 'ALCANCE'}</span>
+                                <div className="flex items-center gap-2 text-white text-xl drop-shadow-md">
+                                    <img src="/icons/gun.svg" alt="Range" className="w-5 h-5 invert" />
+                                    {/* Show Total Reach: Weapon + Scope */}
+                                    {myPlayer.weaponRange + (myPlayer.viewDistance || 0)}
+                                </div>
+                            </span>
 
-                        {/* Range / View - LARGER ICONS */}
-                        {/* Range / View - REDUCED SIZE (Matching Health Label) */}
-                        <div className="flex gap-6 text-xs font-mono font-bold text-gray-400 ml-4">
-                            <span className="flex flex-col items-center gap-0.5"><span className="text-[10px] text-cyan-500 uppercase tracking-widest">{t('range')}</span> <span className="text-white text-lg drop-shadow-md">⌖ {myPlayer.weaponRange}</span></span>
-                            <span className="flex flex-col items-center gap-0.5"><span className="text-[10px] text-purple-500 uppercase tracking-widest">{t('view')}</span> <span className="text-white text-lg drop-shadow-md">👁 {1 + (myPlayer.viewDistance || 0)}</span></span>
+                            {/* Defense Mod (Mustang) - REBRANDED AS DISTANCIA */}
+                            <span className="flex flex-col items-center gap-0.5" title={t('card_mustang_desc')}>
+                                <span className="text-[10px] text-blue-500 uppercase tracking-widest">{t('label_defense') || 'DISTANCIA'}</span>
+                                <div className="flex items-center gap-2 text-white text-xl drop-shadow-md">
+                                    <img src="/icons/vision.svg" alt="Distancia" className="w-5 h-5" />
+                                    {/* Display Base Distance (1) + Mod */}
+                                    {1 + (myPlayer.distanceMod || 0)}
+                                </div>
+                            </span>
                         </div>
                     </div>
 
@@ -1460,43 +1493,14 @@ export const GameBoard: React.FC = () => {
                 )
             }
 
-            {/* DRAW CHECK MODAL (Jail/Dynamite) */}
-            <AnimatePresence>
-                {drawCheckModal && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        className="fixed inset-0 z-[6000] flex items-center justify-center pointer-events-none"
-                    >
-                        <div className="bg-black/90 border-2 border-white/20 p-6 rounded-2xl flex flex-col items-center gap-4 shadow-2xl backdrop-blur-md">
-                            <h2 className="text-2xl font-black text-white uppercase tracking-widest border-b border-gray-700 pb-2 w-full text-center">
-                                {t('draw_check_title') || "DRAW CHECK"}
-                            </h2>
-                            <div className="text-xl text-yellow-500 font-bold uppercase">{t(`check_reason_${drawCheckModal.reason}`) || drawCheckModal.reason}</div>
 
-                            <div className="relative group">
-                                <Card card={drawCheckModal.card} isSelected={false} className="w-48 h-72 scale-110 shadow-[0_0_30px_rgba(255,255,255,0.2)]" />
-                                {/* Result Badge */}
-                                <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full font-black text-xl uppercase tracking-widest shadow-lg border-2 ${drawCheckModal.success ? 'bg-green-600 border-green-400 text-white' : 'bg-red-600 border-red-400 text-white'}`}>
-                                    {drawCheckModal.success ? (t('success') || "SUCCESS") : (t('fail') || "FAIL")}
-                                </div>
-                            </div>
-
-                            <div className="text-gray-300 font-mono text-sm">
-                                {t('player_label') || "Player"}: <span className="text-white font-bold">{drawCheckModal.playerName}</span>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* JESSE JONES DRAW MODAL */}
             {state.currentPhase === 'jesse_jones_draw' && state.turnIndex === myPlayerIndex && (
                 <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
-                    <div className="bg-[#1a1a1a] border border-cyan-500 rounded-xl p-8 max-w-2xl w-full flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+                    <div className="bg-[#1a1a1a] border border-amber-500 rounded-xl p-8 max-w-2xl w-full flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(245,158,11,0.3)]">
                         <div className="text-center">
-                            <h2 className="text-3xl font-black text-cyan-400 uppercase tracking-widest mb-2">{t('jesse_jones_prompt')}</h2>
+                            <h2 className="text-3xl font-black text-amber-500 uppercase tracking-widest mb-2">{t('jesse_jones_prompt')}</h2>
                             <p className="text-gray-400 italic">{t('jesse_jones_desc')}</p>
                         </div>
 
@@ -1504,10 +1508,10 @@ export const GameBoard: React.FC = () => {
                             {/* OPTION A: DECK */}
                             <button
                                 onClick={() => dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'deck' })}
-                                className="flex flex-col items-center gap-4 bg-gray-800 p-6 rounded-xl hover:bg-cyan-900/30 border border-transparent hover:border-cyan-500 transition-all hover:scale-105 group w-1/3"
+                                className="flex flex-col items-center gap-4 bg-gray-800 p-6 rounded-xl hover:bg-amber-900/30 border border-transparent hover:border-amber-500 transition-all hover:scale-105 group w-1/3"
                             >
-                                <div className="w-24 h-36 bg-gray-700 rounded border border-gray-600 flex items-center justify-center shadow-lg group-hover:shadow-cyan-500/20">
-                                    <div className="text-4xl text-gray-500 group-hover:text-cyan-400 font-black">?</div>
+                                <div className="w-24 h-36 bg-gray-700 rounded border border-gray-600 flex items-center justify-center shadow-lg group-hover:shadow-amber-500/20">
+                                    <div className="text-4xl text-gray-500 group-hover:text-amber-400 font-black">?</div>
                                 </div>
                                 <div className="text-xl font-bold text-white uppercase">{t('draw_deck')}</div>
                             </button>
@@ -1777,6 +1781,48 @@ export const GameBoard: React.FC = () => {
                                 {t('spectate_mode') || "SPECTATE"}
                             </button>
                         </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* GAME OVER MODAL */}
+            <AnimatePresence>
+                {state.gameOver && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="fixed inset-0 z-[9000] flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl"
+                    >
+                        <motion.h1
+                            initial={{ scale: 0.5, y: -50 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="text-7xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-amber-700 drop-shadow-[0_10px_10px_rgba(0,0,0,0.8)] uppercase tracking-tighter"
+                        >
+                            GAME OVER
+                        </motion.h1>
+
+                        <div className="mt-8 text-3xl text-gray-400 font-serif tracking-widest uppercase">
+                            {t('winner_is')}
+                        </div>
+
+                        <motion.div
+                            initial={{ scale: 0.8 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.5, type: "spring" }}
+                            className="mt-4 text-5xl md:text-7xl font-black text-white uppercase tracking-widest drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                        >
+                            {state.winner === 'Sheriff' && (t('role_sheriff') + " & " + t('role_deputy'))}
+                            {state.winner === 'Outlaws' && t('role_outlaws')}
+                            {state.winner === 'Renegade' && t('role_renegade')}
+                        </motion.div>
+
+                        <button
+                            onClick={() => {
+                                window.location.reload();
+                            }}
+                            className="mt-16 px-12 py-4 bg-gradient-to-r from-red-600 to-red-800 text-white font-black text-xl rounded-sm border-2 border-red-500 hover:scale-105 transition-transform shadow-[0_0_30px_rgba(220,38,38,0.5)] uppercase tracking-widest"
+                        >
+                            {t('back_to_lobby')}
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>

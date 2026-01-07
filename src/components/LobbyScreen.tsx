@@ -348,7 +348,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ onStartGame, onBack })
                                 <div>
                                     <div className={`font-bold uppercase tracking-wider ${p.isBot ? 'text-stone-500' : (p.id === myId ? 'text-amber-400' : 'text-stone-300')
                                         }`}>
-                                        {p.name} {!p.isBot && p.id === myId ? '(YOU)' : ''}
+                                        {p.name} {!p.isBot && p.id === myId ? t('indicator_you') : ''}
                                     </div>
                                     <div className="text-xs text-stone-500 font-serif italic">
                                         {p.isBot ? t('ai_controlled') : t('human_player')}
