@@ -687,6 +687,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         newDeck = deathRes.deck;
                         newDiscard = deathRes.discardPile;
                         logs = deathRes.logs;
+
+                        // FIX: Refresh local variable so the next check (if currentPlayer.isDead) sees the update!
+                        currentPlayer = newPlayers[currentPlayerIndex];
                     }
                 } else {
                     logs.push(i18n.t('log_dynamite_passed'));
