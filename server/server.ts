@@ -83,17 +83,25 @@ io.on('connection', (socket) => {
     });
 
     socket.on('request_sync', ({ roomId }) => {
+        console.log(`[SERVER] Received request_sync for room ${roomId} from ${socket.id}`);
         const room = rooms[roomId];
         if (room) {
             if (room.gameState) {
+                console.log(`[SERVER] Sending cached state to ${socket.id}`);
                 // If server has state, send it immediately
                 socket.emit('game_state_update', room.gameState);
             } else {
+                console.log(`[SERVER] No cached state. Requesting from HOST ${room.hostId}`);
                 // If not, ask the host to send it
                 if (room.hostId) {
                     io.to(room.hostId).emit('request_host_sync');
+                } else {
+                    console.error(`[SERVER] Room ${roomId} has no hostId!`);
                 }
             }
+        } else {
+            console.error(`[SERVER] request_sync failed: Room ${roomId} not found`);
+            socket.emit('error', { message: 'Room not found during sync' });
         }
     });
 

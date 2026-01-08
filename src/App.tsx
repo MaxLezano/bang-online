@@ -29,33 +29,39 @@ const GameLayout: React.FC<{ settings: GameSettings; socket: any }> = ({ setting
     // HOST: Broadcast State when it changes (Active Sync)
 
     // HOST: Broadcast State when it changes (Active Sync) AND Respond to Requests
+    // HOST: Broadcast State when it changes (Active Sync) AND Respond to Requests
     useEffect(() => {
         if (settings.isHost && state.players.length > 0 && socket) {
-            const sendSync = () => {
+            const sendSync = (reason = "change") => {
                 if (socket.connected) {
+                    console.log(`[HOST] Sending SYNC_STATE (${reason})`, { roomId: settings.roomId, players: state.players.length });
                     socket.emit('sync_game_state', { roomId: settings.roomId, state });
                 }
             };
 
-            // Broadcast on change
-            sendSync();
+            // Broadcast on change (Immediate)
+            sendSync("state_change");
+
+            // REDUNDANCY: Retry
+            const t1 = setTimeout(() => sendSync("redundancy_500ms"), 500);
+            const t2 = setTimeout(() => sendSync("redundancy_1000ms"), 1000);
+            const t3 = setTimeout(() => sendSync("redundancy_2000ms"), 2000);
 
             // Listen for requests from server (if guest asks)
-            socket.on('request_host_sync', sendSync);
+            socket.on('request_host_sync', () => sendSync("request_host_sync"));
 
             return () => {
-                socket.off('request_host_sync', sendSync);
+                socket.off('request_host_sync', sendSync); // Note: might need exact ref
+                clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
             };
         }
     }, [state, settings.isHost, settings.roomId, socket]);
 
-    // GUEST: Listen for State Updates
     // GUEST: Listen for State Updates AND Request Sync
     useEffect(() => {
         if (!settings.isHost && socket) {
             const onStateUpdate = (newState: any) => {
-                // Console log disabled to reduce noise, enable if debugging
-                // console.log("GUEST: Received SYNC_STATE"); 
+                console.log("[GUEST] Received SYNC_STATE!", { players: newState.players?.length, phase: newState.currentPhase });
                 dispatch({ type: 'SYNC_STATE', state: newState });
             };
 
@@ -63,7 +69,7 @@ const GameLayout: React.FC<{ settings: GameSettings; socket: any }> = ({ setting
 
             // Request Sync if we are empty
             if (state.players.length === 0) {
-                console.log("GUEST: Requesting initial sync...");
+                console.log("GUEST: Requesting initial sync...", { roomId: settings.roomId });
                 socket.emit('request_sync', { roomId: settings.roomId });
             }
 
