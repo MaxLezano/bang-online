@@ -27,18 +27,30 @@ const GameLayout: React.FC<{ settings: GameSettings; socket: any }> = ({ setting
     }, [dispatch, settings, state.players.length]); // Dependencies
 
     // HOST: Broadcast State when it changes (Active Sync)
+
+    // HOST: Broadcast State when it changes (Active Sync) AND Respond to Requests
     useEffect(() => {
         if (settings.isHost && state.players.length > 0 && socket) {
-            // Debounce? Or just emit. 
-            // Ideally only on significant updates, but for now every update ensures sync.
-            // Check if socket connected
-            if (socket.connected) {
-                socket.emit('sync_game_state', { roomId: settings.roomId, state });
-            }
+            const sendSync = () => {
+                if (socket.connected) {
+                    socket.emit('sync_game_state', { roomId: settings.roomId, state });
+                }
+            };
+
+            // Broadcast on change
+            sendSync();
+
+            // Listen for requests from server (if guest asks)
+            socket.on('request_host_sync', sendSync);
+
+            return () => {
+                socket.off('request_host_sync', sendSync);
+            };
         }
     }, [state, settings.isHost, settings.roomId, socket]);
 
     // GUEST: Listen for State Updates
+    // GUEST: Listen for State Updates AND Request Sync
     useEffect(() => {
         if (!settings.isHost && socket) {
             const onStateUpdate = (newState: any) => {
@@ -48,11 +60,29 @@ const GameLayout: React.FC<{ settings: GameSettings; socket: any }> = ({ setting
             };
 
             socket.on('game_state_update', onStateUpdate);
+
+            // Request Sync if we are empty
+            if (state.players.length === 0) {
+                console.log("GUEST: Requesting initial sync...");
+                socket.emit('request_sync', { roomId: settings.roomId });
+            }
+
+            // Retry Sync Loop (in case missed)
+            const syncInterval = setInterval(() => {
+                if (state.players.length === 0) {
+                    console.log("GUEST: Retrying sync request...");
+                    socket.emit('request_sync', { roomId: settings.roomId });
+                } else {
+                    clearInterval(syncInterval);
+                }
+            }, 2000);
+
             return () => {
                 socket.off('game_state_update', onStateUpdate);
+                clearInterval(syncInterval);
             };
         }
-    }, [socket, settings.isHost, dispatch]);
+    }, [socket, settings.isHost, dispatch, state.players.length, settings.roomId]);
 
     // HOST: Listen for Client Actions (Relay)
     useEffect(() => {
@@ -404,7 +434,7 @@ function App() {
 
     if (screen === 'GAME' && gameSettings) {
         return (
-            <GameProvider onLogAction={onLogAction}>
+            <GameProvider onLogAction={onLogAction} myId={socket?.id}>
                 <div className="relative">
                     <GameLayout settings={gameSettings} socket={socket} />
                 </div>

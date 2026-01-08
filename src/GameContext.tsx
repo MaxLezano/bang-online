@@ -5,11 +5,12 @@ import { gameReducer, INITIAL_STATE } from './gameEngine';
 interface GameContextProps {
     state: GameState;
     dispatch: React.Dispatch<Action>;
+    myId?: string;
 }
 
 const GameContext = createContext<GameContextProps | undefined>(undefined);
 
-export const GameProvider: React.FC<{ children: React.ReactNode; onLogAction?: (action: Action) => void }> = ({ children, onLogAction }) => {
+export const GameProvider: React.FC<{ children: React.ReactNode; onLogAction?: (action: Action) => void; myId?: string }> = ({ children, onLogAction, myId }) => {
     const [state, dispatchOrigin] = useReducer(gameReducer, INITIAL_STATE);
 
     const dispatch: React.Dispatch<Action> = (action) => {
@@ -18,7 +19,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode; onLogAction?: (
     };
 
     return (
-        <GameContext.Provider value={{ state, dispatch }}>
+        <GameContext.Provider value={{ state, dispatch, myId }}>
             {children}
         </GameContext.Provider>
     );

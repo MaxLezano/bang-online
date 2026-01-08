@@ -75,7 +75,26 @@ io.on('connection', (socket) => {
     });
 
     socket.on('sync_game_state', ({ roomId, state }) => {
+        const room = rooms[roomId];
+        if (room) {
+            room.gameState = state; // Cache state on server
+        }
         socket.to(roomId).emit('game_state_update', state);
+    });
+
+    socket.on('request_sync', ({ roomId }) => {
+        const room = rooms[roomId];
+        if (room) {
+            if (room.gameState) {
+                // If server has state, send it immediately
+                socket.emit('game_state_update', room.gameState);
+            } else {
+                // If not, ask the host to send it
+                if (room.hostId) {
+                    io.to(room.hostId).emit('request_host_sync');
+                }
+            }
+        }
     });
 
     socket.on('start_game_request', ({ roomId, settings }) => {

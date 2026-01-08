@@ -6,7 +6,7 @@ import { Card } from './Card';
 import { calculateDistance } from '../gameEngine';
 
 export const GameBoard: React.FC = () => {
-    const { state, dispatch } = useGame();
+    const { state, dispatch, myId } = useGame();
     const { t } = useTranslation();
 
     // Inject custom styles for heartbeat
@@ -26,8 +26,13 @@ export const GameBoard: React.FC = () => {
         return () => { document.head.removeChild(style); };
     }, []);
 
-    // Determine "My Player" (always index 0 for this prototype)
-    const myPlayerIndex = 0;
+    // Determine "My Player"
+    const myPlayerIndex = React.useMemo(() => {
+        if (!myId) return 0; // Fallback for single player dev without socket
+        const idx = state.players.findIndex(p => p.id === myId);
+        return idx !== -1 ? idx : 0; // Default to 0 if not found (should verify sync)
+    }, [state.players, myId]);
+
     const myPlayer = state.players[myPlayerIndex];
     // REMOVED early return here to avoid Hook Error
 
