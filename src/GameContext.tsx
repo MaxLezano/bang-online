@@ -9,11 +9,13 @@ interface GameContextProps {
 
 const GameContext = createContext<GameContextProps | undefined>(undefined);
 
-export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [state, dispatch] = useReducer(gameReducer, INITIAL_STATE);
+export const GameProvider: React.FC<{ children: React.ReactNode; onLogAction?: (action: Action) => void }> = ({ children, onLogAction }) => {
+    const [state, dispatchOrigin] = useReducer(gameReducer, INITIAL_STATE);
 
-    // Removed auto-init useEffect to prevents crash when settings are undefined
-    // GameLayout handles INIT_GAME with proper settings
+    const dispatch: React.Dispatch<Action> = (action) => {
+        if (onLogAction) onLogAction(action);
+        dispatchOrigin(action);
+    };
 
     return (
         <GameContext.Provider value={{ state, dispatch }}>

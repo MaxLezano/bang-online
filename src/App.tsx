@@ -42,13 +42,30 @@ const GameLayout: React.FC<{ settings: GameSettings; socket: any }> = ({ setting
     useEffect(() => {
         if (!settings.isHost && socket) {
             const onStateUpdate = (newState: any) => {
-                console.log("GUEST: Received SYNC_STATE", newState);
+                // Console log disabled to reduce noise, enable if debugging
+                // console.log("GUEST: Received SYNC_STATE"); 
                 dispatch({ type: 'SYNC_STATE', state: newState });
             };
 
             socket.on('game_state_update', onStateUpdate);
             return () => {
                 socket.off('game_state_update', onStateUpdate);
+            };
+        }
+    }, [socket, settings.isHost, dispatch]);
+
+    // HOST: Listen for Client Actions (Relay)
+    useEffect(() => {
+        if (settings.isHost && socket) {
+            const onGameAction = (action: any) => {
+                // VERBOSE LOGGING FOR DEBUGGING MULTIPLAYER HANG
+                console.log(`[HOST] Received Action ${action.type}`, action);
+                dispatch(action);
+            };
+
+            socket.on('game_action', onGameAction);
+            return () => {
+                socket.off('game_action', onGameAction);
             };
         }
     }, [socket, settings.isHost, dispatch]);
@@ -373,9 +390,21 @@ function App() {
         setScreen('GAME');
     };
 
+    // Action Logging Middleware to Relay Actions
+    const onLogAction = (action: any) => {
+        // Do not replay Sync or internal actions
+        // INIT_GAME is host only. SYNC_STATE is receive only.
+        if (action.type === 'SYNC_STATE' || action.type === 'INIT_GAME') return;
+
+        if (!settings.isHost && socket && socket.connected) {
+            // console.log("GUEST: Emitting Action Relay", action);
+            socket.emit('game_action', { roomId: settings.roomId, action });
+        }
+    };
+
     if (screen === 'GAME' && gameSettings) {
         return (
-            <GameProvider>
+            <GameProvider onLogAction={onLogAction}>
                 <div className="relative">
                     <GameLayout settings={gameSettings} socket={socket} />
                 </div>
