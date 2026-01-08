@@ -1085,7 +1085,7 @@ export const GameBoard: React.FC = () => {
                     <div className="flex gap-2">
 
                         {/* SLOT 1: PLAYER CHARACTER (Vertical Card) */}
-                        <div className="w-32 h-48 bg-gray-800 rounded border-2 border-purple-500/50 flex flex-col relative shrink-0 overflow-visible hover:scale-105 transition-transform duration-300 group/char hover:border-purple-500 shadow-lg cursor-help bg-[url('/assets/card-back.png')] bg-cover z-10 hover:z-50">
+                        <div className="w-32 h-48 bg-gray-800 rounded border-2 border-purple-500/50 flex flex-col relative shrink-0 overflow-visible hover:scale-105 transition-transform duration-300 group/char hover:border-purple-500 shadow-lg cursor-help bg-gradient-to-br from-[#2a1a10] to-[#1a0f0a] z-10 hover:z-50">
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 rounded z-20"></div>
                             <img
                                 src={`/cards/${myPlayer.character.toLowerCase().replace(/ /g, '_')}.webp`}
