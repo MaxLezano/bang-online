@@ -250,6 +250,59 @@ function App() {
     const [screen, setScreen] = useState<'MENU' | 'LOBBY' | 'GAME'>('MENU');
     const [gameSettings, setGameSettings] = useState<GameSettings | null>(null);
 
+    // Asset Preload State
+    const [loadingProgress, setLoadingProgress] = useState(0);
+    const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+    useEffect(() => {
+        const ASSETS = [
+            // Cards
+            'alijo.webp', 'appaloosa.webp', 'bang.webp', 'barrel.webp', 'bart_cassidy.webp',
+            'beer.webp', 'black_jack.webp', 'calamity_janet.webp', 'duel.webp', 'dynamite.webp',
+            'el_gringo.webp', 'gatling.webp', 'general_store.webp', 'indians.webp', 'jail.webp',
+            'jesse_jones.webp', 'jourdonnais.webp', 'kit_carlson.webp', 'lightning.webp', 'lucky_duke.webp',
+            'missed.webp', 'mustang.webp', 'panic.webp', 'paul_regret.webp', 'pedro_ramirez.webp',
+            'remington.webp', 'rev_carabine.webp', 'rose_doolan.webp', 'saloon.webp', 'schofield.webp',
+            'scope.webp', 'sid_ketchum.webp', 'slab_the_killer.webp', 'stagecoach.webp', 'suzy_lafayette.webp',
+            'volcanic.webp', 'vulture_sam.webp', 'wells_fargo.webp', 'willy_the_kid.webp', 'winchester.webp',
+            // Roles
+            'role_deputy.webp', 'role_outlaw.webp', 'role_renegade.webp', 'role_sheriff.webp'
+        ];
+
+        const ICONS = [
+            'cards.svg', 'dynamite.svg', 'gun.svg', 'jail.svg',
+            'scope.svg', 'sheriff_star.svg', 'shield.svg', 'vision.svg'
+        ];
+
+        let loaded = 0;
+        const total = ASSETS.length + ICONS.length;
+
+        const handleLoad = () => {
+            loaded++;
+            setLoadingProgress((loaded / total) * 100);
+            if (loaded >= total) {
+                // Small delay to ensure smooth UI transition
+                setTimeout(() => setAssetsLoaded(true), 500);
+            }
+        };
+
+        // Start loading
+        ASSETS.forEach(file => {
+            const img = new Image();
+            img.src = `/cards/${file}`;
+            img.onload = handleLoad;
+            img.onerror = handleLoad; // Continue even if one fails
+        });
+
+        ICONS.forEach(file => {
+            const img = new Image();
+            img.src = `/icons/${file}`;
+            img.onload = handleLoad;
+            img.onerror = handleLoad;
+        });
+
+    }, []);
+
     const handleStartGame = (settings: GameSettings) => {
         console.log("Starting game with settings:", settings);
         setGameSettings(settings);
@@ -291,13 +344,29 @@ function App() {
                 )}
 
                 {screen === 'MENU' && (
-                    <div className="animate-fade-in-up">
+                    <div className="animate-fade-in-up flex flex-col items-center gap-4">
                         <button
                             onClick={() => setScreen('LOBBY')}
-                            className="px-16 py-5 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 bg-[length:200%_auto] rounded-sm font-bold text-xl text-white tracking-[0.2em] shadow-[0_0_20px_rgba(245,158,11,0.4)] border border-amber-400/30 hover:brightness-110 hover:scale-105 active:scale-95 transition-all uppercase"
+                            disabled={!assetsLoaded}
+                            className={`px-16 py-5 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 bg-[length:200%_auto] rounded-sm font-bold text-xl text-white tracking-[0.2em] shadow-[0_0_20px_rgba(245,158,11,0.4)] border border-amber-400/30 transition-all uppercase ${assetsLoaded ? 'hover:brightness-110 hover:scale-105 active:scale-95 cursor-pointer' : 'opacity-50 cursor-wait grayscale'}`}
                         >
                             {t('start_game')}
                         </button>
+
+                        {/* Loading Bar */}
+                        {!assetsLoaded && (
+                            <div className="w-64 flex flex-col items-center gap-2 mt-2 animate-fade-in">
+                                <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+                                    <div
+                                        className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)] transition-all duration-300 ease-out"
+                                        style={{ width: `${loadingProgress}%` }}
+                                    ></div>
+                                </div>
+                                <span className="text-[10px] text-amber-500/60 font-mono tracking-widest uppercase">
+                                    {t('loading')} {Math.round(loadingProgress)}%
+                                </span>
+                            </div>
+                        )}
                     </div>
                 )}
 
