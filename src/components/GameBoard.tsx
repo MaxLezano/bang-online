@@ -417,7 +417,7 @@ export const GameBoard: React.FC = () => {
                             {/* Full Height Role Art */}
                             <div className="absolute inset-0 z-0">
                                 <img
-                                    src={`/cards/role_${myPlayer.role.toLowerCase()}.png`}
+                                    src={`/cards/role_${myPlayer.role.toLowerCase()}.webp`}
                                     alt={myPlayer.role}
                                     className="w-full h-full object-cover object-center transition-transform duration-700 ease-in-out scale-100 group-hover:scale-110"
                                     onError={(e) => {
@@ -500,7 +500,7 @@ export const GameBoard: React.FC = () => {
                                     {/* Full Height Character Art - Idle: contain/cover to show borders. Hover: Scale up to remove borders. */}
                                     <div className="absolute inset-0 z-0">
                                         <img
-                                            src={`/cards/${char.name.toLowerCase().replace(/ /g, '_')}.png`}
+                                            src={`/cards/${char.name.toLowerCase().replace(/ /g, '_')}.webp`}
                                             alt={char.name}
                                             className="w-full h-full object-cover object-center transition-transform duration-700 ease-in-out scale-100 group-hover:scale-125"
                                             onError={(e) => {
