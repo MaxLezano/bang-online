@@ -396,9 +396,9 @@ function App() {
         // INIT_GAME is host only. SYNC_STATE is receive only.
         if (action.type === 'SYNC_STATE' || action.type === 'INIT_GAME') return;
 
-        if (!settings.isHost && socket && socket.connected) {
+        if (gameSettings && !gameSettings.isHost && socket && socket.connected) {
             // console.log("GUEST: Emitting Action Relay", action);
-            socket.emit('game_action', { roomId: settings.roomId, action });
+            socket.emit('game_action', { roomId: gameSettings.roomId, action });
         }
     };
 

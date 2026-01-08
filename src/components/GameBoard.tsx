@@ -1766,7 +1766,7 @@ export const GameBoard: React.FC = () => {
                                 <div className="text-yellow-500 font-bold tracking-widest uppercase text-sm mb-2">{t('your_role')}</div>
                                 <div className="relative group">
                                     <img
-                                        src={`/cards/role_${myPlayer.role.toLowerCase()}.png`}
+                                        src={`/cards/role_${myPlayer.role.toLowerCase()}.webp`}
                                         alt={myPlayer.role}
                                         className="w-48 rounded-lg shadow-2xl border border-white/10 grayscale group-hover:grayscale-0 transition-all duration-700"
                                     />
