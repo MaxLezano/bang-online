@@ -265,6 +265,9 @@ export const GameBoard: React.FC = () => {
         if (state.logs.length > 0) {
             const lastLog = state.logs[state.logs.length - 1];
             if (lastLog.startsWith('ERROR_RANGE:')) {
+                // Only show this error to the player whose turn it is
+                if (state.turnIndex !== myPlayerIndex) return;
+
                 const parts = lastLog.replace('ERROR_RANGE:', '').split('|');
                 const dist = parts[0] || '?';
                 const range = parts[1] || '?';
