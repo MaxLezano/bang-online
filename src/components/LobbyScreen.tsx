@@ -1,26 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import { GameSettings } from '../types';
 
 interface LobbyScreenProps {
+    socket: Socket | null;
     onStartGame: (settings: GameSettings) => void;
     onBack: () => void;
 }
 
-// Global socket instance to persist across re-renders/unmounts if needed? 
-// No, better to manage lifecycle here or pass it up.
-// For now, we will initiate it here. If we leave Lobby, we disconnect. 
-// EXCEPT if we start game.
-
-export const LobbyScreen: React.FC<LobbyScreenProps> = ({ onStartGame, onBack }) => {
+export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, onBack }) => {
     const { t } = useTranslation();
     const [view, setView] = useState<'MAIN' | 'CREATE' | 'JOIN'>('MAIN');
     const [name, setName] = useState('');
 
-    // Multiplayer State
-    const [socket, setSocket] = useState<Socket | null>(null);
+    // Multiplayer State (Managed by Parent)
     const [roomCode, setRoomCode] = useState('');
     const [isHost, setIsHost] = useState(false);
     const [myId, setMyId] = useState<string>(''); // Track own ID for highlighting
@@ -34,35 +29,31 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ onStartGame, onBack })
 
     const [isConnecting, setIsConnecting] = useState(false);
 
-    // Establish Socket Connection on Mount
+    // Listeners for Socket Events
     useEffect(() => {
-        // Dynamic URL: localhost in dev, current origin in prod
-        const socketUrl = import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin;
-        console.log(`Connecting to socket at: ${socketUrl}`);
+        if (!socket) return;
 
-        const s = io(socketUrl, {
-            autoConnect: false,
-            reconnectionAttempts: 5
-        });
-        setSocket(s);
+        // Update ID if already connected
+        if (socket.id) setMyId(socket.id);
 
-        s.on('connect', () => {
-            console.log('Connected to server:', s.id);
-            if (s.id) setMyId(s.id);
-        });
+        const onConnect = () => {
+            console.log('Connected to server:', socket.id);
+            if (socket.id) setMyId(socket.id);
+            setIsConnecting(false);
+        };
 
-        s.on('disconnect', () => {
+        const onDisconnect = () => {
             console.log('Disconnected');
             setIsConnecting(false);
-        });
+        };
 
-        s.on('connect_error', (err) => {
+        const onConnectError = (err: any) => {
             console.error('Connection error:', err);
             setJoinError('Connection failed: ' + err.message);
             setIsConnecting(false);
-        });
+        };
 
-        s.on('player_joined', (players: any[]) => {
+        const onPlayerJoined = (players: any[]) => {
             console.log('Player joined update:', players);
             const mapped = players.map(p => ({
                 name: p.name,
@@ -70,73 +61,51 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ onStartGame, onBack })
                 id: p.id
             }));
             setParticipants(mapped);
-        });
+        };
 
-        s.on('game_started', (settings: GameSettings) => {
+        const onGameStarted = (settings: GameSettings) => {
             console.log('Host started game!', settings);
             onStartGame(settings);
-        });
-
-        return () => {
-            // Cleanup listeners
-            s.off('connect');
-            s.off('disconnect');
-            s.off('connect_error');
-            s.off('player_joined');
-            s.off('game_started');
-        };
-    }, []);
-
-    const ensureConnection = (cb: () => void) => {
-        if (!socket) return;
-        if (socket.connected) {
-            cb();
-            return;
-        }
-
-        console.log("Socket disconnected, connecting...");
-        setIsConnecting(true);
-        socket.connect();
-
-        const onConnect = () => {
-            console.log("Socket connected for action.");
-            setIsConnecting(false);
-            cb();
-            // Clean up listener
-            socket.off('connect', onConnect);
         };
 
         socket.on('connect', onConnect);
+        socket.on('disconnect', onDisconnect);
+        socket.on('connect_error', onConnectError);
+        socket.on('player_joined', onPlayerJoined);
+        socket.on('game_started', onGameStarted);
 
-        // Timeout if it takes too long
-        setTimeout(() => {
-            if (!socket.connected) {
-                console.error("Connection timed out");
-                setJoinError("Connection timed out. Is the server running?");
-                setIsConnecting(false);
-                socket.off('connect', onConnect);
-            }
-        }, 5000);
-    };
+        return () => {
+            socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
+            socket.off('connect_error', onConnectError);
+            socket.off('player_joined', onPlayerJoined);
+            socket.off('game_started', onGameStarted);
+        };
+    }, [socket, onStartGame]);
 
     const handleCreateLobby = () => {
         if (!socket) return;
 
-        ensureConnection(() => {
-            console.log("Emitting create_room...");
-            socket.emit('create_room', name, (response: any) => {
-                console.log("create_room received:", response);
-                if (response.roomId) {
-                    setRoomCode(response.roomId);
-                    setIsHost(true);
-                    setView('CREATE');
-                    // Set self - ensure socket.id is defined now!
-                    if (socket.id) setMyId(socket.id);
-                    setParticipants([{ name: name, isBot: false, id: socket.id }]);
-                } else {
-                    console.error("Failed to create room:", response);
-                }
-            });
+        if (!socket.connected) {
+            socket.connect(); // Try to connect if not
+            setIsConnecting(true);
+            // We can't emit immediately, wait for connect event
+            return;
+        }
+
+        console.log("Emitting create_room...");
+        socket.emit('create_room', name, (response: any) => {
+            console.log("create_room received:", response);
+            if (response.roomId) {
+                setRoomCode(response.roomId);
+                setIsHost(true);
+                setView('CREATE');
+                // Set self
+                if (socket.id) setMyId(socket.id);
+                setParticipants([{ name: name, isBot: false, id: socket.id }]);
+            } else {
+                console.error("Failed to create room:", response);
+            }
         });
     };
 
@@ -144,22 +113,26 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ onStartGame, onBack })
         if (!socket) return;
         if (!joinCodeInput) return;
 
-        ensureConnection(() => {
-            console.log("Emitting join_room...");
-            socket.emit('join_room', { roomId: joinCodeInput.toUpperCase(), playerName: name }, (response: any) => {
-                if (response.error) {
-                    setJoinError(response.error);
-                } else {
-                    setRoomCode(joinCodeInput.toUpperCase());
-                    setIsHost(false);
-                    setView('CREATE'); // Using same view for lobby
-                    // Update participants
-                    if (socket.id) setMyId(socket.id);
-                    if (response.players) {
-                        setParticipants(response.players.map((p: any) => ({ name: p.name, isBot: false, id: p.id })));
-                    }
+        if (!socket.connected) {
+            socket.connect();
+            setIsConnecting(true);
+            return;
+        }
+
+        console.log("Emitting join_room...");
+        socket.emit('join_room', { roomId: joinCodeInput.toUpperCase(), playerName: name }, (response: any) => {
+            if (response.error) {
+                setJoinError(response.error);
+            } else {
+                setRoomCode(joinCodeInput.toUpperCase());
+                setIsHost(false);
+                setView('CREATE'); // Using same view for lobby
+                // Update participants
+                if (socket.id) setMyId(socket.id);
+                if (response.players) {
+                    setParticipants(response.players.map((p: any) => ({ name: p.name, isBot: false, id: p.id })));
                 }
-            });
+            }
         });
     };
 

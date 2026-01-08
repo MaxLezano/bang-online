@@ -486,7 +486,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
             const deck = generateDeck();
             const players: Player[] = [];
 
-            const createPlayer = (id: string, name: string, role: Role, isBot: boolean, pos: number, char: Character): Player => ({
+            const createPlayer = (id: string, name: string, role: Role, isBot: boolean, pos: number): Player => ({
                 id,
                 name,
                 role,
@@ -515,19 +515,19 @@ export function gameReducer(state: GameState, action: Action): GameState {
                 multiplayerParticipants!.forEach((p, i) => {
                     // Assign 2 char options
                     pendingCharacters[p.id] = [shuffledChars[i * 2], shuffledChars[i * 2 + 1]];
-                    players.push(createPlayer(p.id, p.name, roles[i], p.isBot, i, shuffledChars[i * 2])); // Init with dummy char
+                    players.push(createPlayer(p.id, p.name, roles[i], p.isBot, i)); // Init with dummy char
                 });
             } else {
                 // Single Player Setup
                 const humanId = 'player-0';
                 pendingCharacters[humanId] = [shuffledChars[0], shuffledChars[1]];
-                players.push(createPlayer(humanId, playerName, roles[0], false, 0, shuffledChars[0]));
+                players.push(createPlayer(humanId, playerName, roles[0], false, 0));
 
                 for (let i = 0; i < botCount; i++) {
                     const botId = `bot-${i + 1}`;
                     pendingCharacters[botId] = [shuffledChars[(i + 1) * 2], shuffledChars[(i + 1) * 2 + 1]];
                     const botName = botNames?.[i] || `Bot ${i + 1}`;
-                    players.push(createPlayer(botId, botName, roles[i + 1], true, i + 1, shuffledChars[(i + 1) * 2]));
+                    players.push(createPlayer(botId, botName, roles[i + 1], true, i + 1));
                 }
             }
 
