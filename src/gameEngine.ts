@@ -1633,6 +1633,10 @@ export function gameReducer(state: GameState, action: Action): GameState {
             return newState;
         }
 
+        case 'SYNC_STATE': {
+            return action.state;
+        }
+
         case 'DRAFT_CARD': {
             if (state.currentPhase !== 'general_store' || !state.generalStoreCards) return state;
 
