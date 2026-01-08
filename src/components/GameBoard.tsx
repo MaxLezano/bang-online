@@ -38,7 +38,19 @@ export const GameBoard: React.FC = () => {
 
     // Filter opponents (ensure we get all of them)
     // Safe check if myPlayer is undefined yet
-    const opponents = myPlayer ? state.players.filter(p => p.id !== myPlayer.id) : [];
+    // Safe check if myPlayer is undefined yet
+    // ROTATION LOGIC: Ensure visual order is consistent (Cyclic)
+    const opponents = React.useMemo(() => {
+        if (!myPlayer) return [];
+        const myIndex = state.players.findIndex(p => p.id === myPlayer.id);
+        if (myIndex === -1) return [];
+
+        // Rotate: Players after me + Players before me
+        // Example: [0, 1, 2, 3], Me=1. Result: [2, 3, 0]
+        const afterMe = state.players.slice(myIndex + 1);
+        const beforeMe = state.players.slice(0, myIndex);
+        return [...afterMe, ...beforeMe];
+    }, [state.players, myPlayer]);
 
     const [showDiscardPile, setShowDiscardPile] = React.useState(false); // Can reuse or rename, let's keep for internal toggle if needed, but we'll add specific modal state
     const [showDiscardModal, setShowDiscardModal] = React.useState(false); // Modal for history
