@@ -1458,7 +1458,7 @@ export const GameBoard: React.FC = () => {
                 state.selectedCardId && (
                     <div className="absolute inset-0 pointer-events-none border-[12px] border-cyan-500/20 z-[200] animate-pulse flex items-center justify-center">
                         <div className="bg-black/80 px-8 py-4 rounded-2xl text-cyan-400 font-bold text-2xl backdrop-blur">
-                            SELECT TARGET
+                            {t('select_target')}
                         </div>
                     </div>
                 )

@@ -44,6 +44,7 @@ i18n
                     wanted_title: "WANTED",
                     choose_legend: "CHOOSE YOUR LEGEND",
                     select: "SELECT",
+                    select_target: "SELECT TARGET",
                     join_room_title: "JOIN ROOM",
                     cancel: "CANCEL",
                     join_action: "JOIN",
@@ -276,6 +277,7 @@ i18n
                     wanted_title: "SE BUSCA",
                     choose_legend: "ELIGE TU LEYENDA",
                     select: "SELECCIONAR",
+                    select_target: "SELECCIONAR OBJETIVO",
                     use_ability: "USAR HABILIDAD",
 
                     // Roles
