@@ -28,7 +28,7 @@ export const Card: React.FC<CardProps> = ({ card, isSelected, onClick, className
 
     const getImagePath = () => {
         const cleanName = card.nameKey.replace('card_', '').replace('_name', '');
-        return `/cards/${cleanName}.png`;
+        return `/cards/${cleanName}.webp`;
     };
 
     const getSuitIcon = (suit: string) => {
