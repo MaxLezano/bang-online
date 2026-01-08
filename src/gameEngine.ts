@@ -588,21 +588,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
             const logs = [...state.logs, `${player.name} chose ${charInfo.name}`];
 
             if (!player.isBot) {
-                newPlayers.forEach((p) => {
-                    if (p.isBot && p.character === 'Unknown') {
-                        const botOpts = newPending[p.id];
-                        if (botOpts) {
-                            const picked = botOpts[0];
-                            p.character = picked.name;
-                            p.maxHp = 4 + picked.hpMod + (p.role === 'Sheriff' ? 1 : 0);
-                            p.hp = p.maxHp;
-                            if (p.character === 'Paul Regret') p.distanceMod += 1;
-                            if (p.character === 'Rose Doolan') p.viewDistance += 1;
-                            delete newPending[p.id];
-                            logs.push(`${p.name} auto-selected ${picked.name}`);
-                        }
-                    }
-                });
+                // Implicit bot selection removed. 
+                // Host App will dispatch CHOOSE_CHARACTER for bots.
             }
 
             const stillUnknown = newPlayers.some(p => p.character === 'Unknown');

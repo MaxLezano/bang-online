@@ -86,6 +86,26 @@ const GameLayout: React.FC<{ settings: GameSettings; socket: any }> = ({ setting
             }
 
             const currentPlayer = state.players[state.turnIndex];
+
+            // --- BOT HANDLING FOR CHARACTER SELECTION ---
+            // Independent of turn index, we check if any bot needs to choose
+            if (state.currentPhase === 'select_character') {
+                const unselectedBots = state.players.filter(p => p.isBot && p.character === 'Unknown');
+                if (unselectedBots.length > 0) {
+                    // Pick for first available bot in list per tick
+                    const bot = unselectedBots[0];
+                    const availableChars = state.pendingCharacters?.[bot.id];
+                    if (availableChars && availableChars.length > 0) {
+                        const timer = setTimeout(() => {
+                            // Pick Randomly
+                            const choice = availableChars[Math.floor(Math.random() * availableChars.length)];
+                            dispatch({ type: 'CHOOSE_CHARACTER', playerId: bot.id, characterName: choice.name });
+                        }, 1000 + Math.random() * 1000); // Staggered delay
+                        return () => clearTimeout(timer);
+                    }
+                }
+            }
+
             if (!currentPlayer) return;
 
             // --- BOT AI LOGIC ---
