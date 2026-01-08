@@ -792,7 +792,7 @@ export const GameBoard: React.FC = () => {
                         {/* Avatar */}
                         <div className="w-16 h-16 rounded-full bg-gray-800 border-2 border-gray-600 mb-2 flex items-center justify-center text-3xl shadow-inner group-hover:border-white transition-colors relative overflow-hidden">
                             <img
-                                src={`/cards/${opp.character.toLowerCase().replace(/ /g, '_')}.png`}
+                                src={`/cards/${opp.character.toLowerCase().replace(/ /g, '_')}.webp`}
                                 alt={opp.character}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {

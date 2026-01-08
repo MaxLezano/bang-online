@@ -43,21 +43,34 @@ export const PlayerNode: React.FC<PlayerNodeProps> = ({ player, isCurrentTurn, a
             }}
             onClick={handleClick}
         >
-            <div className="font-bold text-lg mb-1">{player.name}</div>
-            <div className={clsx("text-xs uppercase tracking-widest mb-2", getRoleColor())}>
-                {isLocalPlayer || player.isDead ? player.role : '???'}
-            </div>
-
-            {/* HP Bar */}
-            <div className="w-20 h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
-                <div
-                    className={clsx("h-full transition-all duration-500",
-                        player.hp > 2 ? "bg-green-500 shadow-[0_0_8px_lime]" : "bg-red-500 shadow-[0_0_8px_red]"
-                    )}
-                    style={{ width: `${(player.hp / player.maxHp) * 100}%` }}
+            {/* CHARACTER BACKGROUND IMAGE */}
+            <div className="absolute inset-0 rounded-full overflow-hidden opacity-50 z-0">
+                <img
+                    src={`/cards/${player.character.toLowerCase().replace(/ /g, '_')}.webp`}
+                    alt={player.character}
+                    className="w-full h-full object-cover"
+                    onError={(e) => e.currentTarget.style.display = 'none'}
                 />
             </div>
-            <div className="text-xs mt-1 text-gray-400">{player.hp} / {player.maxHp} HP</div>
+
+            <div className="relative z-10 flex flex-col items-center">
+
+                <div className="font-bold text-lg mb-1">{player.name}</div>
+                <div className={clsx("text-xs uppercase tracking-widest mb-2", getRoleColor())}>
+                    {isLocalPlayer || player.isDead ? player.role : '???'}
+                </div>
+
+                {/* HP Bar */}
+                <div className="w-20 h-2 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
+                    <div
+                        className={clsx("h-full transition-all duration-500",
+                            player.hp > 2 ? "bg-green-500 shadow-[0_0_8px_lime]" : "bg-red-500 shadow-[0_0_8px_red]"
+                        )}
+                        style={{ width: `${(player.hp / player.maxHp) * 100}%` }}
+                    />
+                </div>
+                <div className="text-xs mt-1 text-gray-400">{player.hp} / {player.maxHp} HP</div>
+            </div>
 
             {player.weaponRange > 1 && (
                 <div className="absolute -top-2 -right-2 bg-yellow-900 border border-yellow-500 text-yellow-500 text-[10px] px-1 rounded">
