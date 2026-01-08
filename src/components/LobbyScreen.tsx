@@ -65,7 +65,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, o
 
         const onGameStarted = (settings: GameSettings) => {
             console.log('Host started game!', settings);
-            onStartGame(settings);
+            onStartGame({ ...settings, isHost: isHost });
         };
 
         socket.on('connect', onConnect);
