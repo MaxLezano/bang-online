@@ -24,10 +24,9 @@ export const PlayerNode: React.FC<PlayerNodeProps> = ({ player, isCurrentTurn, a
         }
     };
 
-    const getRoleColor = (role: string) => {
+    const getRoleColor = () => {
         // Only show role colors for Admin or for everyone if game over (simplified)
         if (isLocalPlayer) return 'text-white'; // Local always known
-        if (role === 'Admin') return 'text-blue-400';
         return 'text-gray-400'; // Hidden
     };
 
@@ -45,8 +44,8 @@ export const PlayerNode: React.FC<PlayerNodeProps> = ({ player, isCurrentTurn, a
             onClick={handleClick}
         >
             <div className="font-bold text-lg mb-1">{player.name}</div>
-            <div className={clsx("text-xs uppercase tracking-widest mb-2", getRoleColor(player.role))}>
-                {isLocalPlayer || player.role === 'Admin' || player.isDead ? player.role : '???'}
+            <div className={clsx("text-xs uppercase tracking-widest mb-2", getRoleColor())}>
+                {isLocalPlayer || player.isDead ? player.role : '???'}
             </div>
 
             {/* HP Bar */}
