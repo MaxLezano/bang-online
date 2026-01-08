@@ -81,7 +81,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, o
             socket.off('player_joined', onPlayerJoined);
             socket.off('game_started', onGameStarted);
         };
-    }, [socket, onStartGame]);
+    }, [socket, onStartGame, isHost]);
 
     const handleCreateLobby = () => {
         if (!socket) return;
