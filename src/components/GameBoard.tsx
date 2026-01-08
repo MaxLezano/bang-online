@@ -1074,6 +1074,26 @@ export const GameBoard: React.FC = () => {
                                 </div>
                             )}
 
+                            {/* JAIL INDICATOR */}
+                            {myPlayer.table.some(c => c.effectType === 'jail') && (
+                                <div className="ml-3 relative group/jail">
+                                    <div className="filter drop-shadow-[0_0_15px_rgba(59,130,246,1)] brightness-150 animate-pulse">
+                                        <img
+                                            src="/icons/jail.svg"
+                                            alt="Jail Active"
+                                            className="w-10 h-10 object-contain invert"
+                                        />
+                                    </div>
+                                    {/* Tooltip */}
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-black/95 border border-blue-500 p-2 rounded z-[100] opacity-0 group-hover/jail:opacity-100 transition-opacity pointer-events-none">
+                                        <div className="font-bold text-blue-400 text-xs uppercase mb-1">{t('card_jail')}</div>
+                                        <div className="text-[10px] text-gray-300 italic leading-tight">
+                                            {t('card_jail_desc')}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
 
 
