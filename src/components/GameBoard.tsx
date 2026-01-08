@@ -1291,7 +1291,7 @@ export const GameBoard: React.FC = () => {
 
             {/* RESPONDING PHASE OVERLAY HUD (Interactive Defense) */}
             <AnimatePresence>
-                {state.currentPhase === 'responding' && state.pendingAction?.targetId === myPlayer.id && (() => {
+                {state.currentPhase === 'responding' && state.pendingAction?.targetId === myPlayer.id && !showDraw && (() => {
                     const hasBarrel = myPlayer.table.some(c => c.name === 'Barrel') || myPlayer.character === 'Jourdonnais';
                     const barrelUsed = state.pendingAction?.barrelUsed;
                     return (
