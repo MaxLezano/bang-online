@@ -1162,6 +1162,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
                         newPlayers[playerIndex].table.push(card);
                     }
                 }
+                // FIX: Recalculate stats (distanceMod, viewDistance) immediately after any equipment change
+                newPlayers[playerIndex] = calculatePlayerStats(newPlayers[playerIndex]);
                 newLog += ` equipped ${card.name}`;
 
                 newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
