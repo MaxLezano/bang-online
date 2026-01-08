@@ -95,10 +95,11 @@ export interface GameSettings {
     botCount: number;
     roomId?: string;
     isHost?: boolean;
+    players?: { id: string; name: string; isBot: boolean }[];
 }
 
 export type Action =
-    | { type: 'INIT_GAME'; playerName: string; botCount: number; botNames?: string[] }
+    | { type: 'INIT_GAME'; playerName: string; botCount: number; botNames?: string[]; players?: { id: string; name: string; isBot: boolean }[] }
     | { type: 'START_TURN' }
     | { type: 'SELECT_CARD'; cardId: string | null }
     | { type: 'JESSE_CHOOSE_DRAW'; source: 'deck' | 'player'; targetId?: string }
@@ -111,4 +112,5 @@ export type Action =
     | { type: 'DRAFT_CARD'; cardId: string }
     | { type: 'CHOOSE_CHARACTER'; playerId: string; characterName: string }
     | { type: 'USE_ABILITY'; playerId: string }
-    | { type: 'RESPOND'; responseType: 'card' | 'barrel' | 'take_hit'; cardId?: string };
+    | { type: 'RESPOND'; responseType: 'card' | 'barrel' | 'take_hit'; cardId?: string }
+    | { type: 'SYNC_STATE'; state: GameState };

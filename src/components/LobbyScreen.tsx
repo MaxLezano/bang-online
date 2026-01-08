@@ -206,7 +206,12 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ onStartGame, onBack })
             playerCount: activeCount,
             botCount: botCount,
             roomId: roomCode,
-            isHost: true
+            isHost: true,
+            players: participants.map(p => ({
+                id: p.id || 'bot-' + Math.random(), // Ensure ID
+                name: p.name,
+                isBot: p.isBot
+            }))
         };
 
         // Notify server to start game for everyone?

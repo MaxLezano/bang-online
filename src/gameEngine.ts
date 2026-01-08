@@ -460,25 +460,24 @@ export function gameReducer(state: GameState, action: Action): GameState {
     switch (action.type) {
 
         case 'INIT_GAME': {
-            const { playerName, botCount, botNames } = action;
-            const totalPlayers = 1 + botCount;
+            const { playerName, botCount, botNames, players: multiplayerParticipants } = action;
+            const isMultiplayer = multiplayerParticipants && multiplayerParticipants.length > 0;
+            const totalPlayers = isMultiplayer ? multiplayerParticipants!.length : 1 + botCount;
+
             // ROLES: Sheriff, Renegade, Outlaw, Deputy for >5
-            // 4 Players: 1 Sheriff, 1 Renegade, 2 Outlaws (Wild West Rules)
-            // ROLES: Sheriff is MANDATORY.
+            // 4 Players: 1 Sheriff, 2 Outlaws, 1 Renegade
             let roles: Role[] = [];
-            if (totalPlayers === 2) roles = ['Sheriff', 'Outlaw']; // Duel
+            if (totalPlayers === 2) roles = ['Sheriff', 'Outlaw'];
             else if (totalPlayers === 3) roles = ['Sheriff', 'Renegade', 'Outlaw'];
             else {
-                // Standard Bang! Distribution
                 roles = ['Sheriff', 'Renegade', 'Outlaw', 'Outlaw'];
                 if (totalPlayers >= 5) roles.push('Deputy');
                 if (totalPlayers >= 6) roles.push('Outlaw');
                 if (totalPlayers >= 7) roles.push('Deputy');
-                // Fill rest with Outlaws if somehow > 7
                 while (roles.length < totalPlayers) roles.push('Outlaw');
             }
 
-            // Fisher-Yates Shuffle
+            // Shuffle Roles
             for (let i = roles.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [roles[i], roles[j]] = [roles[j], roles[i]];
@@ -487,7 +486,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
             const deck = generateDeck();
             const players: Player[] = [];
 
-            const createPlayer = (id: string, name: string, role: Role, isBot: boolean, pos: number): Player => ({
+            const createPlayer = (id: string, name: string, role: Role, isBot: boolean, pos: number, char: Character): Player => ({
                 id,
                 name,
                 role,
@@ -497,6 +496,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
                 hand: [],
                 table: [],
                 position: pos,
+
+                // Character Preview (Hidden until chosen, but assigned for bots)
+                // We will handle character state logic separately below.
                 weaponRange: 1,
                 viewDistance: 0,
                 distanceMod: 0,
@@ -504,29 +506,37 @@ export function gameReducer(state: GameState, action: Action): GameState {
                 isBot
             });
 
-            // Human
-            players.push(createPlayer('player-0', playerName, roles[0], false, 0));
+            // Logic for characters pending selection
+            const shuffledChars = shuffle([...CHARACTERS]);
+            const pendingCharacters: Record<string, Character[]> = {};
 
-            // Bots
-            for (let i = 0; i < botCount; i++) {
-                players.push(createPlayer(`bot-${i + 1}`, botNames?.[i] || `Bot ${i + 1}`, roles[i + 1], true, i + 1));
+            if (isMultiplayer) {
+                // Multiplayer Setup
+                multiplayerParticipants!.forEach((p, i) => {
+                    // Assign 2 char options
+                    pendingCharacters[p.id] = [shuffledChars[i * 2], shuffledChars[i * 2 + 1]];
+                    players.push(createPlayer(p.id, p.name, roles[i], p.isBot, i, shuffledChars[i * 2])); // Init with dummy char
+                });
+            } else {
+                // Single Player Setup
+                const humanId = 'player-0';
+                pendingCharacters[humanId] = [shuffledChars[0], shuffledChars[1]];
+                players.push(createPlayer(humanId, playerName, roles[0], false, 0, shuffledChars[0]));
+
+                for (let i = 0; i < botCount; i++) {
+                    const botId = `bot-${i + 1}`;
+                    pendingCharacters[botId] = [shuffledChars[(i + 1) * 2], shuffledChars[(i + 1) * 2 + 1]];
+                    const botName = botNames?.[i] || `Bot ${i + 1}`;
+                    players.push(createPlayer(botId, botName, roles[i + 1], true, i + 1, shuffledChars[(i + 1) * 2]));
+                }
             }
 
             // DEBUG: Log Roles
             console.log("--- GAME INIT ROLES ---");
             players.forEach(p => console.log(`${p.name}: ${p.role}`));
 
-            // Find Sheriff for initial turn index
             const sheriffIdx = players.findIndex(p => p.role === 'Sheriff');
             const initialTurnIdx = sheriffIdx !== -1 ? sheriffIdx : 0;
-
-            // AUTO-SELECT for Bots
-            const shuffledChars = shuffle([...CHARACTERS]);
-            const pendingCharacters: Record<string, Character[]> = {};
-
-            players.forEach((p, idx) => {
-                pendingCharacters[p.id] = [shuffledChars[idx * 2], shuffledChars[idx * 2 + 1]];
-            });
 
             let logs = [t('game_init_select_char')];
 
@@ -538,7 +548,10 @@ export function gameReducer(state: GameState, action: Action): GameState {
                 currentPhase: 'select_character',
                 turnIndex: initialTurnIdx,
                 logs,
-                pendingCharacters
+                pendingCharacters,
+                gameOver: undefined,
+                winner: undefined,
+                pendingAction: undefined
             };
         }
 
