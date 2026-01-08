@@ -10,6 +10,3 @@ build/
 .env
 npm-debug.log
 yarn-error.log
-
-# User requested exclusion
-CARDS/
