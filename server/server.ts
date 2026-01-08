@@ -1,13 +1,30 @@
 
 import { Server } from 'socket.io';
+import express from 'express';
 import { createServer } from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const httpServer = createServer();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: "*", // Allow all origins for local dev
+        origin: "*", // Allow all origins for dev/prod flexibility
         methods: ["GET", "POST"]
     }
+});
+
+// Serve frontend static files from the dist directory
+// Parent directory because server.ts is in /server/ and dist is in /dist/
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
+
+// Handle SPA routing: return index.html for any unknown route
+app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
 });
 
 interface Room {
@@ -54,17 +71,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('game_action', ({ roomId, action }) => {
-        // Relay action to Host (who is room.hostId)
-        // Actually, just broadcast to everyone in room, 
-        // Logic: if Host receives it, they process it.
-        // If Client receives it, they might ignore it if they are not Host.
-        // BUT better: Send to specific Host? 
-        // Simpler: Broadcast to room. "Host" logic filters.
         socket.to(roomId).emit('game_action', action);
     });
 
     socket.on('sync_game_state', ({ roomId, state }) => {
-        // Host sends this. Broadcast to everyone else.
         socket.to(roomId).emit('game_state_update', state);
     });
 
@@ -77,20 +87,18 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        // Find rooms this socket was key in
         for (const roomId in rooms) {
             const room = rooms[roomId];
             const playerIdx = room.players.findIndex(p => p.id === socket.id);
             if (playerIdx !== -1) {
                 room.players.splice(playerIdx, 1);
-                io.to(roomId).emit('player_left', room.players); // Send updated list
+                io.to(roomId).emit('player_left', room.players);
 
-                // If Host left, destroy room (Host-Authoritative)
                 if (socket.id === room.hostId) {
                     io.to(roomId).emit('room_closed', 'Host disconnected');
                     delete rooms[roomId];
                 } else if (room.players.length === 0) {
-                    delete rooms[roomId]; // Cleanup empty room
+                    delete rooms[roomId];
                 }
             }
         }
@@ -98,7 +106,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
-    console.log(`Socket.io server running on port ${PORT}`);
+    console.log(`Server running - Frontend & Backend on port ${PORT}`);
 });

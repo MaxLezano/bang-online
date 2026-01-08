@@ -36,7 +36,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ onStartGame, onBack })
 
     // Establish Socket Connection on Mount
     useEffect(() => {
-        const s = io('http://localhost:3000', {
+        // Dynamic URL: localhost in dev, current origin in prod
+        const socketUrl = import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin;
+        console.log(`Connecting to socket at: ${socketUrl}`);
+
+        const s = io(socketUrl, {
             autoConnect: false,
             reconnectionAttempts: 5
         });
