@@ -88,7 +88,7 @@ io.on('connection', (socket) => {
 
         // Notify all
         io.to(roomId).emit('player_joined', room.players);
-        callback({ success: true });
+        if (callback) callback({ success: true });
     });
 
     socket.on('remove_bot', ({ roomId, botIndex }, callback) => {
@@ -105,7 +105,7 @@ io.on('connection', (socket) => {
                 // but let's consistency emit 'player_left' or just 'player_joined' with new list.
                 // In frontend we map the list directly so 'player_joined' is fine as "Update List"
                 io.to(roomId).emit('player_joined', room.players);
-                callback({ success: true });
+                if (callback) callback({ success: true });
             }
         }
     });
