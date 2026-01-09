@@ -841,6 +841,28 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
             // Normal Draw
             currentPlayer.hand = [...currentPlayer.hand, ...drawnCards];
+
+            // BLACK JACK LOGIC: Show 2nd card, if RED (Hearts/Diamonds) -> Draw 1 more
+            if (currentPlayer.character === 'Black Jack' && drawnCards.length === 2) {
+                const secondCard = drawnCards[1];
+                logs.push(`${currentPlayer.name} (Black Jack) shows: ${secondCard.suit} ${secondCard.value}`); // In a real game we'd format this nicely
+
+                if (secondCard.suit === 'hearts' || secondCard.suit === 'diamonds') {
+                    // Draw Extra
+                    if (newDeck.length === 0) {
+                        if (newDiscard.length > 0) {
+                            newDeck = [...newDeck, ...shuffle(newDiscard)];
+                            newDiscard = [];
+                        }
+                    }
+                    if (newDeck.length > 0) {
+                        const extra = newDeck.shift()!;
+                        currentPlayer.hand.push(extra);
+                        logs.push(i18n.t('log_black_jack_bonus') || "Black Jack draws an extra card!");
+                    }
+                }
+            }
+
             newPlayers[currentPlayerIndex] = currentPlayer;
 
             return {
