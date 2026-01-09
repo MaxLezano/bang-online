@@ -135,6 +135,7 @@ i18n
                     // Messages
                     // Interactive Defense
                     attacked: "ATTACKED!",
+                    is_attacking_you: "is attacking you",
                     play_missed_hint: "Select a Missed! card to dodge.",
                     play_bang_hint: "Discard a BANG! card to escape!",
                     use_barrel: "USE BARREL",
@@ -348,6 +349,7 @@ i18n
 
                     // Interactive Defense
                     attacked: "¡ATACADO!",
+                    is_attacking_you: "te está atacando",
                     use_barrel: "Usar Barril",
                     take_damage: "Recibir Daño",
                     play_missed_hint: "Elige carta Fallaste! para esquivar",

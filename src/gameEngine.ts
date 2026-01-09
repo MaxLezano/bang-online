@@ -843,7 +843,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
             currentPlayer.hand = [...currentPlayer.hand, ...drawnCards];
 
             // BLACK JACK LOGIC: Show 2nd card, if RED (Hearts/Diamonds) -> Draw 1 more
-            if (currentPlayer.character === 'Black Jack' && drawnCards.length === 2) {
+            // FIX: Ensure this ONLY happens during the Draw Phase (not General Store, etc)
+            if (currentPlayer.character === 'Black Jack' && state.currentPhase === 'draw' && drawnCards.length === 2) {
                 const secondCard = drawnCards[1];
                 logs.push(`${currentPlayer.name} (Black Jack) shows: ${secondCard.suit} ${secondCard.value}`); // In a real game we'd format this nicely
 
@@ -858,7 +859,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
                     if (newDeck.length > 0) {
                         const extra = newDeck.shift()!;
                         currentPlayer.hand.push(extra);
-                        logs.push(i18n.t('log_black_jack_bonus') || "Black Jack draws an extra card!");
+                        logs.push(`${currentPlayer.name} draws an extra card (Black Jack ability)!`);
                     }
                 }
             }
@@ -1692,7 +1693,24 @@ export function gameReducer(state: GameState, action: Action): GameState {
             }
 
             let nextPhase: GameState['currentPhase'] = state.currentPhase;
-            if (newStoreCards.length === 0) {
+            // AUTO-DRAFT OPTIMIZATION: If only 1 card remains, give it to the last player automatically
+            if (newStoreCards.length === 1 && nextStoreIndex !== null) {
+                const finalCard = newStoreCards[0];
+                const receiverName = newPlayers[nextStoreIndex].name;
+
+                // Directly modifying the player in the array since newPlayers is a clone
+                newPlayers[nextStoreIndex] = {
+                    ...newPlayers[nextStoreIndex],
+                    hand: [...newPlayers[nextStoreIndex].hand, finalCard]
+                };
+
+                newStoreCards.pop(); // Remove the last card
+                logs.push(`${receiverName} receives ${finalCard.name} (Last pick)`);
+                logs.push("General Store closed");
+
+                nextPhase = 'play';
+                nextStoreIndex = null;
+            } else if (newStoreCards.length === 0) {
                 nextPhase = 'play';
                 nextStoreIndex = null;
                 logs.push("General Store closed");

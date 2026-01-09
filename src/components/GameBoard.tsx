@@ -806,8 +806,8 @@ export const GameBoard: React.FC = () => {
                     <div
                         key={opp.id}
                         className={`pointer-events-auto relative group flex flex-col items-center justify-start bg-black/90 rounded-2xl border-2 p-3 w-40 min-h-[220px] transition-all hover:scale-110 hover:z-50 ${state.turnIndex === opp.position ? 'border-red-500 shadow-[0_0_35px_rgba(239,68,68,0.6)] scale-105' : 'border-gray-800'
-                            } ${state.selectedCardId ? 'cursor-crosshair hover:bg-red-900/40 ring-2 ring-red-500' : 'cursor-default hover:bg-gray-900 group-hover:border-gray-500'}`}
-                        onClick={() => state.selectedCardId && handleOpponentClick(opp.id)}
+                            } ${state.selectedCardId && state.turnIndex === myPlayerIndex ? 'cursor-crosshair hover:bg-red-900/40 ring-2 ring-red-500' : 'cursor-default hover:bg-gray-900 group-hover:border-gray-500'}`}
+                        onClick={() => state.selectedCardId && state.turnIndex === myPlayerIndex && handleOpponentClick(opp.id)}
                     >
                         {/* Avatar */}
                         <div className="w-16 h-16 rounded-full bg-gray-800 border-2 border-gray-600 mb-2 flex items-center justify-center text-3xl shadow-inner group-hover:border-white transition-colors relative overflow-hidden">
@@ -1325,6 +1325,13 @@ export const GameBoard: React.FC = () => {
                                 {/* Scanline effect */}
                                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02),rgba(255,0,0,0.06))] z-0 pointer-events-none bg-[length:100%_4px,3px_100%]"></div>
 
+                                {state.pendingAction?.sourceId && (
+                                    <div className="relative z-10 text-sm md:text-base font-bold uppercase tracking-widest mb-1 opacity-90">
+                                        <span className="text-white mr-1.5">{state.players.find(p => p.id === state.pendingAction?.sourceId)?.name || "Unknown"}</span>
+                                        <span className="text-red-500">{t('is_attacking_you')}</span>
+                                    </div>
+                                )}
+
                                 <div className="relative z-10 text-7xl font-black text-red-600 tracking-tighter uppercase drop-shadow-[0_0_25px_rgba(220,38,38,1)] animate-pulse">
                                     {t('attacked') || "ATTACKED!"}
                                 </div>
@@ -1490,7 +1497,7 @@ export const GameBoard: React.FC = () => {
 
             {/* Drop Zone hint */}
             {
-                state.selectedCardId && (
+                state.selectedCardId && state.turnIndex === myPlayerIndex && (
                     <div className="absolute inset-0 pointer-events-none border-[12px] border-cyan-500/20 z-[200] animate-pulse flex items-center justify-center">
                         <div className="bg-black/80 px-8 py-4 rounded-2xl text-cyan-400 font-bold text-2xl backdrop-blur">
                             {t('select_target')}
