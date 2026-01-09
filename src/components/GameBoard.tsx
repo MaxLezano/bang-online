@@ -579,7 +579,7 @@ export const GameBoard: React.FC = () => {
         <div className="w-full h-full relative bg-[#1a1a1a] flex items-center justify-center">
             {/* Poker Table Background (Shrunk to give room) */}
             <div
-                className="absolute w-[95%] h-[50%] md:w-[80%] md:h-[60%] bg-[#0f0f0f] rounded-[50px] md:rounded-[150px] border-[6px] border-gray-800 shadow-[0_0_80px_rgba(0,0,0,0.9)] z-0 top-[15%] md:top-[20%] cursor-crosshair active:scale-[0.99] transition-transform"
+                className="absolute w-[95%] h-[50%] md:w-[80%] md:h-[60%] bg-[#0f0f0f] rounded-[50px] md:rounded-[150px] border-[6px] border-gray-800 shadow-[0_0_80px_rgba(0,0,0,0.9)] z-0 top-[15%] md:top-[20%] cursor-[url(/icons/attack.svg)_16_16,crosshair] active:scale-[0.99] transition-transform"
                 onClick={handleGlobalBoardClick}
                 onDragOver={handleDragOver}
                 onDrop={handleDropOnTable}
@@ -806,7 +806,7 @@ export const GameBoard: React.FC = () => {
                     <div
                         key={opp.id}
                         className={`pointer-events-auto relative group flex flex-col items-center justify-start bg-black/90 rounded-2xl border-2 p-3 w-40 min-h-[220px] transition-all hover:scale-110 hover:z-50 ${state.turnIndex === opp.position ? 'border-red-500 shadow-[0_0_35px_rgba(239,68,68,0.6)] scale-105' : 'border-gray-800'
-                            } ${state.selectedCardId && state.turnIndex === myPlayerIndex ? 'cursor-crosshair hover:bg-red-900/40 ring-2 ring-red-500' : 'cursor-default hover:bg-gray-900 group-hover:border-gray-500'}`}
+                            } ${state.selectedCardId && state.turnIndex === myPlayerIndex ? 'cursor-[url(/icons/attack.svg)_16_16,crosshair] hover:bg-red-900/40 ring-2 ring-red-500' : 'cursor-default hover:bg-gray-900 group-hover:border-gray-500'}`}
                         onClick={() => state.selectedCardId && state.turnIndex === myPlayerIndex && handleOpponentClick(opp.id)}
                     >
                         {/* Avatar */}
@@ -990,23 +990,23 @@ export const GameBoard: React.FC = () => {
                         )}
                     </div>
                 ))}
-            </div>
+            </div >
 
             {/* --- PLAYER DASHBOARD (Bottom Left) --- */}
-            <div
+            < div
                 className="absolute bottom-2 left-2 md:bottom-6 md:left-6 z-[60] flex items-end gap-6 pointer-events-auto transform scale-75 origin-bottom-left md:scale-100 transition-transform"
                 onDragOver={handleDragOver}
                 onDrop={handleDropOnSelf}
             >
                 {/* 1. Character & Equipment Grid (Single Row - 4 Slots) */}
-                <div className="bg-[#151515] p-3 rounded-xl border border-gray-700 shadow-2xl flex flex-col gap-2 w-auto relative group">
+                < div className="bg-[#151515] p-3 rounded-xl border border-gray-700 shadow-2xl flex flex-col gap-2 w-auto relative group" >
                     {/* Gloss Effect */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none rounded-2xl"></div>
+                    < div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none rounded-2xl" ></div >
 
                     {/* Stats Header (Redesigned: Health Bars top, Range/View Compact) */}
-                    <div className="flex justify-between items-center bg-black/40 px-4 py-2 rounded-lg border border-gray-800">
+                    < div className="flex justify-between items-center bg-black/40 px-4 py-2 rounded-lg border border-gray-800" >
                         {/* ROLE ICON WITH HOVER TOOLTIP */}
-                        <div className="flex items-center gap-4">
+                        < div className="flex items-center gap-4" >
                             <div className="relative flex items-center justify-center px-4 group/role cursor-help">
                                 <span className="relative z-10 text-lg md:text-xl font-black text-amber-100 uppercase leading-none tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                                     {t(`role_${myPlayer.role.toLowerCase()}`) || myPlayer.role}
@@ -1055,77 +1055,81 @@ export const GameBoard: React.FC = () => {
                             </div>
 
                             {/* DYNAMITE INDICATOR (New Position - Next to Health) */}
-                            {myPlayer.table.some(c => c.name === 'Dynamite') && (
-                                <div className="ml-3 relative group/dynamite">
-                                    <div className="filter drop-shadow-[0_0_15px_rgba(220,38,38,1)] brightness-150 animate-[heartbeat_0.8s_ease-in-out_infinite]">
-                                        <img
-                                            src="/icons/dynamite.svg"
-                                            alt="Dynamite Active"
-                                            className="w-10 h-10 object-contain invert"
-                                        />
-                                    </div>
-                                    {/* Tooltip */}
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-black/95 border border-red-500 p-2 rounded z-[100] opacity-0 group-hover/dynamite:opacity-100 transition-opacity pointer-events-none">
-                                        <div className="font-bold text-red-400 text-xs uppercase mb-1">{t('card_dynamite')}</div>
-                                        <div className="text-[10px] text-gray-300 italic leading-tight">
-                                            {t('card_dynamite_desc')}
+                            {
+                                myPlayer.table.some(c => c.name === 'Dynamite') && (
+                                    <div className="ml-3 relative group/dynamite">
+                                        <div className="filter drop-shadow-[0_0_15px_rgba(220,38,38,1)] brightness-150 animate-[heartbeat_0.8s_ease-in-out_infinite]">
+                                            <img
+                                                src="/icons/dynamite.svg"
+                                                alt="Dynamite Active"
+                                                className="w-10 h-10 object-contain invert"
+                                            />
+                                        </div>
+                                        {/* Tooltip */}
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-black/95 border border-red-500 p-2 rounded z-[100] opacity-0 group-hover/dynamite:opacity-100 transition-opacity pointer-events-none">
+                                            <div className="font-bold text-red-400 text-xs uppercase mb-1">{t('card_dynamite')}</div>
+                                            <div className="text-[10px] text-gray-300 italic leading-tight">
+                                                {t('card_dynamite_desc')}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )
+                            }
 
                             {/* JAIL INDICATOR */}
-                            {myPlayer.table.some(c => c.effectType === 'jail') && (
-                                <div className="ml-3 relative group/jail">
-                                    <div className="filter drop-shadow-[0_0_15px_rgba(59,130,246,1)] brightness-150 animate-pulse">
-                                        <img
-                                            src="/icons/jail.svg"
-                                            alt="Jail Active"
-                                            className="w-10 h-10 object-contain invert"
-                                        />
-                                    </div>
-                                    {/* Tooltip */}
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-black/95 border border-blue-500 p-2 rounded z-[100] opacity-0 group-hover/jail:opacity-100 transition-opacity pointer-events-none">
-                                        <div className="font-bold text-blue-400 text-xs uppercase mb-1">{t('card_jail')}</div>
-                                        <div className="text-[10px] text-gray-300 italic leading-tight">
-                                            {t('card_jail_desc')}
+                            {
+                                myPlayer.table.some(c => c.effectType === 'jail') && (
+                                    <div className="ml-3 relative group/jail">
+                                        <div className="filter drop-shadow-[0_0_15px_rgba(59,130,246,1)] brightness-150 animate-pulse">
+                                            <img
+                                                src="/icons/jail.svg"
+                                                alt="Jail Active"
+                                                className="w-10 h-10 object-contain invert"
+                                            />
+                                        </div>
+                                        {/* Tooltip */}
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-black/95 border border-blue-500 p-2 rounded z-[100] opacity-0 group-hover/jail:opacity-100 transition-opacity pointer-events-none">
+                                            <div className="font-bold text-blue-400 text-xs uppercase mb-1">{t('card_jail')}</div>
+                                            <div className="text-[10px] text-gray-300 italic leading-tight">
+                                                {t('card_jail_desc')}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )
+                            }
 
-                        </div>
+                        </div >
 
 
                         {/* Range / Defense Stats - SIMPLIFIED (2 VALUES ONLY) */}
-                        <div className="flex gap-4 text-xs font-mono font-bold text-gray-400 ml-4">
+                        < div className="flex gap-4 text-xs font-mono font-bold text-gray-400 ml-4" >
                             {/* Weapon Range (TOTAL REACH) */}
-                            <span className="flex flex-col items-center gap-0.5" title={`${t('label_weapon_range')}: ${myPlayer.weaponRange} + ${t('card_scope_desc')}: ${myPlayer.viewDistance || 0}`}>
+                            < span className="flex flex-col items-center gap-0.5" title={`${t('label_weapon_range')}: ${myPlayer.weaponRange} + ${t('card_scope_desc')}: ${myPlayer.viewDistance || 0}`}>
                                 <span className="text-[10px] text-cyan-500 uppercase tracking-widest">{t('label_weapon_range') || 'ALCANCE'}</span>
                                 <div className="flex items-center gap-2 text-white text-xl drop-shadow-md">
                                     <img src="/icons/gun.svg" alt="Range" className="w-5 h-5 invert" />
                                     {/* Show Total Reach: Weapon + Scope */}
                                     {myPlayer.weaponRange + (myPlayer.viewDistance || 0)}
                                 </div>
-                            </span>
+                            </span >
 
                             {/* Defense Mod (Mustang) - REBRANDED AS DISTANCIA */}
-                            <span className="flex flex-col items-center gap-0.5" title={t('card_mustang_desc')}>
+                            < span className="flex flex-col items-center gap-0.5" title={t('card_mustang_desc')} >
                                 <span className="text-[10px] text-blue-500 uppercase tracking-widest">{t('label_defense') || 'DISTANCIA'}</span>
                                 <div className="flex items-center gap-2 text-white text-xl drop-shadow-md">
                                     <img src="/icons/vision.svg" alt="Distancia" className="w-5 h-5" />
                                     {/* Display Base Distance (1) + Mod */}
                                     {1 + (myPlayer.distanceMod || 0)}
                                 </div>
-                            </span>
-                        </div>
-                    </div>
+                            </span >
+                        </div >
+                    </div >
 
                     {/* The 4 Slots: Player, Weapon, Gear 1, Gear 2 */}
-                    <div className="flex gap-2">
+                    < div className="flex gap-2" >
 
                         {/* SLOT 1: PLAYER CHARACTER (Vertical Card) */}
-                        <div className="w-32 h-48 bg-gray-800 rounded border-2 border-purple-500/50 flex flex-col relative shrink-0 overflow-visible hover:scale-105 transition-transform duration-300 group/char hover:border-purple-500 shadow-lg cursor-help bg-gradient-to-br from-[#2a1a10] to-[#1a0f0a] z-10 hover:z-50">
+                        < div className="w-32 h-48 bg-gray-800 rounded border-2 border-purple-500/50 flex flex-col relative shrink-0 overflow-visible hover:scale-105 transition-transform duration-300 group/char hover:border-purple-500 shadow-lg cursor-help bg-gradient-to-br from-[#2a1a10] to-[#1a0f0a] z-10 hover:z-50" >
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 rounded z-20"></div>
                             <img
                                 src={`/cards/${myPlayer.character.toLowerCase().replace(/ /g, '_')}.webp`}
@@ -1169,331 +1173,345 @@ export const GameBoard: React.FC = () => {
                                     </button>
                                 )}
                             </div>
-                        </div>
+                        </div >
 
                         {/* SLOT 2: WEAPON */}
-                        <div onClick={() => handleSlotClick('Weapon')} className="w-32 h-48 bg-black/60 rounded border-2 border-dashed border-gray-700 flex items-center justify-center relative hover:border-gray-500 transition-colors group/slot cursor-pointer">
+                        < div onClick={() => handleSlotClick('Weapon')} className="w-32 h-48 bg-black/60 rounded border-2 border-dashed border-gray-700 flex items-center justify-center relative hover:border-gray-500 transition-colors group/slot cursor-pointer" >
                             <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#151515] px-2 text-[8px] text-gray-500 uppercase font-bold tracking-widest z-10 border border-gray-800 rounded">{t('label_weapon')}</div>
-                            {myPlayer.table.find(c => c.subType === 'Weapon') ? (
-                                <div className="absolute inset-0 group/weapon flex items-center justify-center p-1">
-                                    <Card card={myPlayer.table.find(c => c.subType === 'Weapon')!} isSelected={false} className="w-full h-full shadow-md" disableHover={true} variant="equipped" />
-                                    {/* Weapon Tooltip */}
-                                    <div className="absolute bottom-full mb-2 -left-12 w-48 bg-black/95 border border-gray-600 p-2 rounded z-[100] opacity-0 group-hover/weapon:opacity-100 transition-opacity pointer-events-none">
-                                        <div className="font-bold text-gray-300 text-xs">{myPlayer.table.find(c => c.subType === 'Weapon')!.name}</div>
-                                        <div className="text-[10px] text-gray-400 italic">{myPlayer.table.find(c => c.subType === 'Weapon')!.description || t(myPlayer.table.find(c => c.subType === 'Weapon')!.descKey)}</div>
+                            {
+                                myPlayer.table.find(c => c.subType === 'Weapon') ? (
+                                    <div className="absolute inset-0 group/weapon flex items-center justify-center p-1">
+                                        <Card card={myPlayer.table.find(c => c.subType === 'Weapon')!} isSelected={false} className="w-full h-full shadow-md" disableHover={true} variant="equipped" />
+                                        {/* Weapon Tooltip */}
+                                        <div className="absolute bottom-full mb-2 -left-12 w-48 bg-black/95 border border-gray-600 p-2 rounded z-[100] opacity-0 group-hover/weapon:opacity-100 transition-opacity pointer-events-none">
+                                            <div className="font-bold text-gray-300 text-xs">{myPlayer.table.find(c => c.subType === 'Weapon')!.name}</div>
+                                            <div className="text-[10px] text-gray-400 italic">{myPlayer.table.find(c => c.subType === 'Weapon')!.description || t(myPlayer.table.find(c => c.subType === 'Weapon')!.descKey)}</div>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <img
-                                    src="/icons/gun.svg"
-                                    alt="Weapon Slot"
-                                    className="w-12 h-12 opacity-20 group-hover/slot:opacity-40 transition-opacity invert"
-                                />
-                            )}
-                        </div>
+                                ) : (
+                                    <img
+                                        src="/icons/gun.svg"
+                                        alt="Weapon Slot"
+                                        className="w-12 h-12 opacity-20 group-hover/slot:opacity-40 transition-opacity invert"
+                                    />
+                                )
+                            }
+                        </div >
 
                         {/* SLOT 3 & 4: GEAR */}
                         {/* SLOT 3 & 4: GEAR (Exclude Dynamite) */}
-                        {[0, 1].map(i => {
-                            const equip = myPlayer.table.filter(c => c.subType !== 'Weapon' && c.name !== 'Dynamite')[i];
-                            return (
-                                <div key={i} onClick={() => handleSlotClick('Gear')} className="w-32 h-48 bg-black/60 rounded border-2 border-dashed border-gray-700 flex items-center justify-center relative hover:border-blue-500/30 transition-colors group/slot cursor-pointer">
-                                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#151515] px-2 text-[8px] text-gray-500 uppercase font-bold tracking-widest z-10 border border-gray-800 rounded">{t('label_gear')} {i + 1}</div>
-                                    {equip ? (
-                                        <div className="absolute inset-0 group/gear flex items-center justify-center p-1">
-                                            <Card card={equip} isSelected={false} className="w-full h-full shadow-md" disableHover={true} variant="equipped" />
-                                            <div className="absolute bottom-full mb-2 -left-12 w-48 bg-black/95 border border-gray-600 p-2 rounded z-[100] opacity-0 group-hover/gear:opacity-100 transition-opacity pointer-events-none">
-                                                <div className="font-bold text-gray-300 text-xs">{equip.name}</div>
-                                                <div className="text-[10px] text-gray-400 italic">{equip.description || t(equip.descKey)}</div>
+                        {
+                            [0, 1].map(i => {
+                                const equip = myPlayer.table.filter(c => c.subType !== 'Weapon' && c.name !== 'Dynamite')[i];
+                                return (
+                                    <div key={i} onClick={() => handleSlotClick('Gear')} className="w-32 h-48 bg-black/60 rounded border-2 border-dashed border-gray-700 flex items-center justify-center relative hover:border-blue-500/30 transition-colors group/slot cursor-pointer">
+                                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#151515] px-2 text-[8px] text-gray-500 uppercase font-bold tracking-widest z-10 border border-gray-800 rounded">{t('label_gear')} {i + 1}</div>
+                                        {equip ? (
+                                            <div className="absolute inset-0 group/gear flex items-center justify-center p-1">
+                                                <Card card={equip} isSelected={false} className="w-full h-full shadow-md" disableHover={true} variant="equipped" />
+                                                <div className="absolute bottom-full mb-2 -left-12 w-48 bg-black/95 border border-gray-600 p-2 rounded z-[100] opacity-0 group-hover/gear:opacity-100 transition-opacity pointer-events-none">
+                                                    <div className="font-bold text-gray-300 text-xs">{equip.name}</div>
+                                                    <div className="text-[10px] text-gray-400 italic">{equip.description || t(equip.descKey)}</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <img
-                                            src="/icons/shield.svg"
-                                            alt="Gear Slot"
-                                            className="w-12 h-12 opacity-20 group-hover/slot:opacity-40 transition-opacity invert"
-                                        />
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                                        ) : (
+                                            <img
+                                                src="/icons/shield.svg"
+                                                alt="Gear Slot"
+                                                className="w-12 h-12 opacity-20 group-hover/slot:opacity-40 transition-opacity invert"
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })
+                        }
+                    </div >
+                </div >
 
                 {/* 2. HAND CARDS (Fan - "Pop Up" Style - SMOOTH STRAIGHTEN) - High z-index to overlay everything else when zoomed */}
-                <div className={`absolute bottom-0 left-0 right-0 h-[300px] md:h-auto md:relative md:h-[600px] flex items-end w-full pointer-events-none transition-all duration-300 ${state.currentPhase === 'responding' ? 'z-[6000]' : 'z-[1000] hover:z-[2000]'}`}>
+                < div className={`absolute bottom-0 left-0 right-0 h-[300px] md:h-auto md:relative md:h-[600px] flex items-end w-full pointer-events-none transition-all duration-300 ${state.currentPhase === 'responding' ? 'z-[6000]' : 'z-[1000] hover:z-[2000]'}`}>
                     {/* DYNAMIC SPACING Hand Container */}
-                    {(() => {
-                        const count = myPlayer.hand.length;
-                        // COMPRESSED SPACING LOGIC: Higher negative spacing = More Overlap
-                        let spacing = "-space-x-20";
-                        if (count > 12) spacing = "-space-x-32";
-                        else if (count > 9) spacing = "-space-x-28";
-                        else if (count > 6) spacing = "-space-x-24";
+                    {
+                        (() => {
+                            const count = myPlayer.hand.length;
+                            // COMPRESSED SPACING LOGIC: Higher negative spacing = More Overlap
+                            let spacing = "-space-x-20";
+                            if (count > 12) spacing = "-space-x-32";
+                            else if (count > 9) spacing = "-space-x-28";
+                            else if (count > 6) spacing = "-space-x-24";
 
-                        return (
-                            <div className={`flex ${spacing} items-end px-12 pb-8 pt-60 w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] pointer-events-auto transition-all duration-300`}>
-                                {myPlayer.hand.map((card, i) => {
-                                    // DISCARD PHASE HIGHLIGHT
-                                    const isDiscardPhase = state.currentPhase === 'discard' && state.turnIndex === myPlayerIndex;
-                                    const isSelected = state.selectedCardId === card.id;
+                            return (
+                                <div className={`flex ${spacing} items-end px-12 pb-8 pt-60 w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] pointer-events-auto transition-all duration-300`}>
+                                    {myPlayer.hand.map((card, i) => {
+                                        // DISCARD PHASE HIGHLIGHT
+                                        const isDiscardPhase = state.currentPhase === 'discard' && state.turnIndex === myPlayerIndex;
+                                        const isSelected = state.selectedCardId === card.id;
 
-                                    // RESPONDING PHASE HIGHLIGHT
-                                    let isValidDefense = false;
-                                    // CRITICAL: Check if *I* am the target, not if it's my turn
-                                    if (state.currentPhase === 'responding' && state.pendingAction && state.pendingAction.targetId === myPlayer.id) {
-                                        const isIndians = state.pendingAction.type === 'indians';
-                                        const requiredEffect = isIndians ? 'bang' : 'missed';
-                                        isValidDefense = card.effectType === requiredEffect || (myPlayer.character === 'Calamity Janet' && (card.effectType === 'bang' || card.effectType === 'missed'));
-                                    }
+                                        // RESPONDING PHASE HIGHLIGHT
+                                        let isValidDefense = false;
+                                        // CRITICAL: Check if *I* am the target, not if it's my turn
+                                        if (state.currentPhase === 'responding' && state.pendingAction && state.pendingAction.targetId === myPlayer.id) {
+                                            const isIndians = state.pendingAction.type === 'indians';
+                                            const requiredEffect = isIndians ? 'bang' : 'missed';
+                                            isValidDefense = card.effectType === requiredEffect || (myPlayer.character === 'Calamity Janet' && (card.effectType === 'bang' || card.effectType === 'missed'));
+                                        }
 
-                                    return (
-                                        <motion.div
-                                            key={card.id}
-                                            layoutId={card.id}
-                                            // Framer Motion handles the rotation state
-                                            initial={false}
-                                            animate={{
-                                                rotate: isSelected || isValidDefense ? 0 : (i - (myPlayer.hand.length - 1) / 2) * 5,
-                                                y: isSelected || isValidDefense ? -50 : 0,
-                                                scale: isSelected || isValidDefense ? 1.15 : 1,
-                                                zIndex: isSelected || isValidDefense ? 100 : i
-                                            }}
-                                            whileHover={{
-                                                rotate: 0,
-                                                y: -50,
-                                                scale: 1.15,
-                                                zIndex: 100,
-                                                transition: { duration: 0.3, ease: "easeOut" }
-                                            }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleCardClick(card.id);
-                                            }}
-                                            className={`relative w-36 h-52 origin-bottom transition-all duration-300 ${isDiscardPhase ? 'cursor-pointer hover:brightness-110' : ''
-                                                } ${isValidDefense ? 'cursor-pointer ring-4 ring-yellow-400 rounded-lg shadow-[0_0_35px_rgba(250,204,21,1)] z-[200]' : ''}`}
-                                            draggable
-                                            onDragStart={(e) => handleDragStart(e as any, card.id)}
-                                            onMouseEnter={() => setHoveredHandCardId(card.id)}
-                                            onMouseLeave={() => setHoveredHandCardId(null)}
-                                            style={{ transformStyle: 'preserve-3d' }}
-                                        >
-                                            {/* Discard Phase Glow Overlay */}
-                                            {isDiscardPhase && (
-                                                <div className="absolute inset-0 bg-red-500/50 rounded-lg blur-md animate-pulse pointer-events-none z-0"></div>
-                                            )}
+                                        return (
+                                            <motion.div
+                                                key={card.id}
+                                                layoutId={card.id}
+                                                // Framer Motion handles the rotation state
+                                                initial={false}
+                                                animate={{
+                                                    rotate: isSelected || isValidDefense ? 0 : (i - (myPlayer.hand.length - 1) / 2) * 5,
+                                                    y: isSelected || isValidDefense ? -50 : 0,
+                                                    scale: isSelected || isValidDefense ? 1.15 : 1,
+                                                    zIndex: isSelected || isValidDefense ? 100 : i
+                                                }}
+                                                whileHover={{
+                                                    rotate: 0,
+                                                    y: -50,
+                                                    scale: 1.15,
+                                                    zIndex: 100,
+                                                    transition: { duration: 0.3, ease: "easeOut" }
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleCardClick(card.id);
+                                                }}
+                                                className={`relative w-36 h-52 origin-bottom transition-all duration-300 ${isDiscardPhase ? 'cursor-pointer hover:brightness-110' : ''
+                                                    } ${isValidDefense ? 'cursor-pointer ring-4 ring-yellow-400 rounded-lg shadow-[0_0_35px_rgba(250,204,21,1)] z-[200]' : ''}`}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e as any, card.id)}
+                                                onMouseEnter={() => setHoveredHandCardId(card.id)}
+                                                onMouseLeave={() => setHoveredHandCardId(null)}
+                                                style={{ transformStyle: 'preserve-3d' }}
+                                            >
+                                                {/* Discard Phase Glow Overlay */}
+                                                {isDiscardPhase && (
+                                                    <div className="absolute inset-0 bg-red-500/50 rounded-lg blur-md animate-pulse pointer-events-none z-0"></div>
+                                                )}
 
-                                            <div className={`relative z-10 w-full h-full ${isDiscardPhase ? 'ring-2 ring-red-500 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.6)]' : ''}`}>
-                                                <Card card={card} isSelected={state.selectedCardId === card.id} variant="hand" className="w-full h-full" />
-                                            </div>
-
-                                            {/* Discard Icon Overlay */}
-                                            {isDiscardPhase && (
-                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover/card:opacity-100 transition-opacity z-20 pointer-events-none">
-                                                    <div className="bg-black/80 text-red-500 border border-red-500 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider transform -rotate-12 whitespace-nowrap">
-                                                        {t('modal.discard')}
-                                                    </div>
+                                                <div className={`relative z-10 w-full h-full ${isDiscardPhase ? 'ring-2 ring-red-500 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.6)]' : ''}`}>
+                                                    <Card card={card} isSelected={state.selectedCardId === card.id} variant="hand" className="w-full h-full" />
                                                 </div>
-                                            )}
-                                        </motion.div>
-                                    );
-                                })}
-                                {
-                                    myPlayer.hand.length === 0 && (
-                                        <div className="text-gray-600 italic text-xl p-8 animate-pulse self-center">{t('hand_empty') || "Your hand is empty..."}</div>
-                                    )
-                                }
-                            </div>
-                        );
-                    })()}
-                </div>
-            </div>
+
+                                                {/* Discard Icon Overlay */}
+                                                {isDiscardPhase && (
+                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover/card:opacity-100 transition-opacity z-20 pointer-events-none">
+                                                        <div className="bg-black/80 text-red-500 border border-red-500 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider transform -rotate-12 whitespace-nowrap">
+                                                            {t('modal.discard')}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        );
+                                    })}
+                                    {
+                                        myPlayer.hand.length === 0 && (
+                                            <div className="text-gray-600 italic text-xl p-8 animate-pulse self-center">{t('hand_empty') || "Your hand is empty..."}</div>
+                                        )
+                                    }
+                                </div>
+                            );
+                        })()
+                    }
+                </div >
+            </div >
 
             {/* RESPONDING PHASE OVERLAY HUD (Interactive Defense) */}
             <AnimatePresence>
-                {state.currentPhase === 'responding' && state.pendingAction?.targetId === myPlayer.id && !showDraw && (() => {
-                    const hasBarrel = myPlayer.table.some(c => c.name === 'Barrel') || myPlayer.character === 'Jourdonnais';
-                    const barrelUsed = state.pendingAction?.barrelUsed;
-                    return (
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.8, opacity: 0 }}
-                            className="fixed inset-0 z-[5000] flex items-center justify-center pointer-events-none"
-                        >
-                            <div className="bg-black/95 border-4 border-red-600/80 rounded-2xl p-12 flex flex-col items-center gap-8 shadow-[0_0_60px_rgba(220,38,38,0.6)] pointer-events-auto relative overflow-hidden ring-1 ring-red-500/50">
-                                {/* Scanline effect */}
-                                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02),rgba(255,0,0,0.06))] z-0 pointer-events-none bg-[length:100%_4px,3px_100%]"></div>
+                {
+                    state.currentPhase === 'responding' && state.pendingAction?.targetId === myPlayer.id && !showDraw && (() => {
+                        const hasBarrel = myPlayer.table.some(c => c.name === 'Barrel') || myPlayer.character === 'Jourdonnais';
+                        const barrelUsed = state.pendingAction?.barrelUsed;
+                        return (
+                            <motion.div
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.8, opacity: 0 }}
+                                className="fixed inset-0 z-[5000] flex items-center justify-center pointer-events-none"
+                            >
+                                <div className="bg-black/95 border-4 border-red-600/80 rounded-2xl p-12 flex flex-col items-center gap-8 shadow-[0_0_60px_rgba(220,38,38,0.6)] pointer-events-auto relative overflow-hidden ring-1 ring-red-500/50">
+                                    {/* Scanline effect */}
+                                    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02),rgba(255,0,0,0.06))] z-0 pointer-events-none bg-[length:100%_4px,3px_100%]"></div>
 
-                                {state.pendingAction?.sourceId && (
-                                    <div className="relative z-10 text-sm md:text-base font-bold uppercase tracking-widest mb-1 opacity-90">
-                                        <span className="text-white mr-1.5">{state.players.find(p => p.id === state.pendingAction?.sourceId)?.name || "Unknown"}</span>
-                                        <span className="text-red-500">{t('is_attacking_you')}</span>
-                                    </div>
-                                )}
-
-                                <div className="relative z-10 text-7xl font-black text-red-600 tracking-tighter uppercase drop-shadow-[0_0_25px_rgba(220,38,38,1)] animate-pulse">
-                                    {t('attacked') || "ATTACKED!"}
-                                </div>
-
-                                <div className="flex gap-4 relative z-10">
-                                    {/* BARREL BUTTON - Cannot use against Indians */}
-                                    {hasBarrel && !barrelUsed && state.pendingAction?.type !== 'indians' && (
-                                        <button
-                                            onClick={() => dispatch({ type: 'RESPOND', responseType: 'barrel' })}
-                                            className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 active:scale-95 transition-all text-xl uppercase tracking-wider flex items-center gap-2"
-                                        >
-                                            <span>🛢️</span> {t('use_barrel') || "Use Barrel"}
-                                        </button>
+                                    {state.pendingAction?.sourceId && (
+                                        <div className="relative z-10 text-sm md:text-base font-bold uppercase tracking-widest mb-1 opacity-90">
+                                            <span className="text-white mr-1.5">{state.players.find(p => p.id === state.pendingAction?.sourceId)?.name || "Unknown"}</span>
+                                            <span className="text-red-500">{t('is_attacking_you')}</span>
+                                        </div>
                                     )}
 
-                                    {/* TAKE HIT BUTTON */}
-                                    <button
-                                        onClick={() => dispatch({ type: 'RESPOND', responseType: 'take_hit' })}
-                                        className="bg-red-800 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 active:scale-95 transition-all text-xl uppercase tracking-wider border border-red-500"
-                                    >
-                                        {t('take_damage') || "Take Damage"}
-                                    </button>
+                                    <div className="relative z-10 text-7xl font-black text-red-600 tracking-tighter uppercase drop-shadow-[0_0_25px_rgba(220,38,38,1)] animate-pulse">
+                                        {t('attacked') || "ATTACKED!"}
+                                    </div>
+
+                                    <div className="flex gap-4 relative z-10">
+                                        {/* BARREL BUTTON - Cannot use against Indians */}
+                                        {hasBarrel && !barrelUsed && state.pendingAction?.type !== 'indians' && (
+                                            <button
+                                                onClick={() => dispatch({ type: 'RESPOND', responseType: 'barrel' })}
+                                                className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 active:scale-95 transition-all text-xl uppercase tracking-wider flex items-center gap-2"
+                                            >
+                                                <span>🛢️</span> {t('use_barrel') || "Use Barrel"}
+                                            </button>
+                                        )}
+
+                                        {/* TAKE HIT BUTTON */}
+                                        <button
+                                            onClick={() => dispatch({ type: 'RESPOND', responseType: 'take_hit' })}
+                                            className="bg-red-800 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 active:scale-95 transition-all text-xl uppercase tracking-wider border border-red-500"
+                                        >
+                                            {t('take_damage') || "Take Damage"}
+                                        </button>
+                                    </div>
+
+                                    {(() => {
+                                        // Check if user has ANY valid defense card
+                                        const isIndians = state.pendingAction?.type === 'indians';
+                                        const requiredEffect = isIndians ? 'bang' : 'missed';
+                                        const canPlayCard = myPlayer.hand.some(c =>
+                                            c.effectType === requiredEffect ||
+                                            (myPlayer.character === 'Calamity Janet' && (c.effectType === 'bang' || c.effectType === 'missed'))
+                                        );
+
+                                        return (
+                                            <div className={`relative z-10 font-bold px-6 py-2 rounded-full border transition-colors ${canPlayCard
+                                                ? 'text-red-200/80 bg-black/40 border-red-500/30'
+                                                : 'text-gray-500 bg-black/20 border-gray-700/30 cursor-not-allowed pointer-events-none opacity-50'
+                                                }`}>
+                                                {isIndians
+                                                    ? (t('play_bang_hint') || "Select a BANG! card to fight back!")
+                                                    : (t('play_missed_hint') || "Select a Missed! card to dodge")
+                                                }
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
-
-                                {(() => {
-                                    // Check if user has ANY valid defense card
-                                    const isIndians = state.pendingAction?.type === 'indians';
-                                    const requiredEffect = isIndians ? 'bang' : 'missed';
-                                    const canPlayCard = myPlayer.hand.some(c =>
-                                        c.effectType === requiredEffect ||
-                                        (myPlayer.character === 'Calamity Janet' && (c.effectType === 'bang' || c.effectType === 'missed'))
-                                    );
-
-                                    return (
-                                        <div className={`relative z-10 font-bold px-6 py-2 rounded-full border transition-colors ${canPlayCard
-                                            ? 'text-red-200/80 bg-black/40 border-red-500/30'
-                                            : 'text-gray-500 bg-black/20 border-gray-700/30 cursor-not-allowed pointer-events-none opacity-50'
-                                            }`}>
-                                            {isIndians
-                                                ? (t('play_bang_hint') || "Select a BANG! card to fight back!")
-                                                : (t('play_missed_hint') || "Select a Missed! card to dodge")
-                                            }
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-                        </motion.div>
-                    );
-                })()}
-            </AnimatePresence>
+                            </motion.div>
+                        );
+                    })()
+                }
+            </AnimatePresence >
 
             {/* DISCARD PHASE OVERLAY HUD */}
             <AnimatePresence>
-                {state.currentPhase === 'discard' && state.turnIndex === myPlayerIndex && (() => {
-                    const discardExcess = Math.max(0, myPlayer.hand.length - myPlayer.hp);
-                    return (
-                        <motion.div
-                            initial={{ x: 100, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: 100, opacity: 0 }}
-                            className="absolute right-0 top-1/2 -translate-y-1/2 z-[100] bg-red-900/90 border-l-4 border-red-500 p-6 rounded-l-xl shadow-[0_0_30px_rgba(220,38,38,0.5)] backdrop-blur-md max-w-xs"
-                        >
-                            <div className="text-red-200 text-xs font-bold uppercase tracking-wider mb-2 border-b border-red-700 pb-2">
-                                {t('discard_limit', { limit: myPlayer.hp })}
-                            </div>
-                            <div className="text-4xl font-black text-white mb-1 animate-pulse">
-                                {discardExcess}
-                            </div>
-                            <div className="text-red-300 text-sm font-bold uppercase leading-tight">
-                                {t('discard_excess', { count: discardExcess })}
-                            </div>
-                            <div className="mt-4 text-[10px] text-red-400 italic">
-                                {t('phase_discard')}
-                            </div>
-                        </motion.div>
-                    );
-                })()}
-            </AnimatePresence>
+                {
+                    state.currentPhase === 'discard' && state.turnIndex === myPlayerIndex && (() => {
+                        const discardExcess = Math.max(0, myPlayer.hand.length - myPlayer.hp);
+                        return (
+                            <motion.div
+                                initial={{ x: 100, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                exit={{ x: 100, opacity: 0 }}
+                                className="absolute right-0 top-1/2 -translate-y-1/2 z-[100] bg-red-900/90 border-l-4 border-red-500 p-6 rounded-l-xl shadow-[0_0_30px_rgba(220,38,38,0.5)] backdrop-blur-md max-w-xs"
+                            >
+                                <div className="text-red-200 text-xs font-bold uppercase tracking-wider mb-2 border-b border-red-700 pb-2">
+                                    {t('discard_limit', { limit: myPlayer.hp })}
+                                </div>
+                                <div className="text-4xl font-black text-white mb-1 animate-pulse">
+                                    {discardExcess}
+                                </div>
+                                <div className="text-red-300 text-sm font-bold uppercase leading-tight">
+                                    {t('discard_excess', { count: discardExcess })}
+                                </div>
+                                <div className="mt-4 text-[10px] text-red-400 italic">
+                                    {t('phase_discard')}
+                                </div>
+                            </motion.div>
+                        );
+                    })()
+                }
+            </AnimatePresence >
 
             {/* DISCARD HISTORY MODAL - FULL SCREEN BLUR & FLOAT */}
             <AnimatePresence>
-                {showDiscardModal && (
-                    <motion.div
-                        initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-                        animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
-                        exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-                        className="fixed inset-0 z-[9000] flex flex-col p-10 bg-black/40 backdrop-blur-md"
-                        onClick={() => setShowDiscardModal(false)}
-                    >
-                        {/* Floating Header */}
-                        <div className="w-full flex justify-between items-end mb-8 max-w-[1600px] mx-auto border-b border-gray-700/30 pb-4" onClick={e => e.stopPropagation()}>
-                            <h2 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-500 uppercase tracking-tighter drop-shadow-xl">
-                                {t('discard_pile')} <span className="text-3xl text-gray-600 align-top ml-2">{state.discardPile.length}</span>
-                            </h2>
-                            <button onClick={() => setShowDiscardModal(false)} className="text-gray-400 hover:text-white text-3xl transition-transform hover:scale-110 active:scale-95">✕</button>
-                        </div>
-
-                        {/* Full Screen Grid - Scrollable */}
-                        <div className="flex-1 w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-                            <div className="flex flex-wrap justify-center gap-8 max-w-[1600px] mx-auto pb-20 pt-10" onClick={e => e.stopPropagation()}>
-                                {[...state.discardPile].reverse().map((card, idx) => (
-                                    <div
-                                        key={`${card.id}_hist_${idx}`}
-                                        className="relative group w-36 h-56 perspective-1000 z-0 hover:z-50"
-                                        onMouseEnter={() => setHoveredDiscardCardId(card.id)}
-                                        onMouseLeave={() => setHoveredDiscardCardId(null)}
-                                    >
-                                        <div className="w-full h-full transform group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-300 shadow-2xl hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]">
-                                            <Card card={card} isSelected={false} className="w-full h-full" />
-                                        </div>
-                                    </div>
-                                ))}
-                                {state.discardPile.length === 0 && <div className="w-full text-center text-gray-500 italic text-2xl font-light mt-20">{t('graveyard_empty')}</div>}
+                {
+                    showDiscardModal && (
+                        <motion.div
+                            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                            animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
+                            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                            className="fixed inset-0 z-[9000] flex flex-col p-10 bg-black/40 backdrop-blur-md"
+                            onClick={() => setShowDiscardModal(false)}
+                        >
+                            {/* Floating Header */}
+                            <div className="w-full flex justify-between items-end mb-8 max-w-[1600px] mx-auto border-b border-gray-700/30 pb-4" onClick={e => e.stopPropagation()}>
+                                <h2 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-500 uppercase tracking-tighter drop-shadow-xl">
+                                    {t('discard_pile')} <span className="text-3xl text-gray-600 align-top ml-2">{state.discardPile.length}</span>
+                                </h2>
+                                <button onClick={() => setShowDiscardModal(false)} className="text-gray-400 hover:text-white text-3xl transition-transform hover:scale-110 active:scale-95">✕</button>
                             </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
+                            {/* Full Screen Grid - Scrollable */}
+                            <div className="flex-1 w-full overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                                <div className="flex flex-wrap justify-center gap-8 max-w-[1600px] mx-auto pb-20 pt-10" onClick={e => e.stopPropagation()}>
+                                    {[...state.discardPile].reverse().map((card, idx) => (
+                                        <div
+                                            key={`${card.id}_hist_${idx}`}
+                                            className="relative group w-36 h-56 perspective-1000 z-0 hover:z-50"
+                                            onMouseEnter={() => setHoveredDiscardCardId(card.id)}
+                                            onMouseLeave={() => setHoveredDiscardCardId(null)}
+                                        >
+                                            <div className="w-full h-full transform group-hover:scale-110 group-hover:-translate-y-2 transition-all duration-300 shadow-2xl hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]">
+                                                <Card card={card} isSelected={false} className="w-full h-full" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {state.discardPile.length === 0 && <div className="w-full text-center text-gray-500 italic text-2xl font-light mt-20">{t('graveyard_empty')}</div>}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )
+                }
+            </AnimatePresence >
 
 
             {/* FIXED HAND CARD & DISCARD TOOLTIP - Sidebar Position */}
             <AnimatePresence>
-                {(hoveredHandCardId || hoveredDiscardCardId) && (() => {
-                    const targetId = hoveredHandCardId || hoveredDiscardCardId;
-                    const card = myPlayer.hand.find(c => c.id === targetId) || state.discardPile.find(c => c.id === targetId);
+                {
+                    (hoveredHandCardId || hoveredDiscardCardId) && (() => {
+                        const targetId = hoveredHandCardId || hoveredDiscardCardId;
+                        const card = myPlayer.hand.find(c => c.id === targetId) || state.discardPile.find(c => c.id === targetId);
 
-                    if (!card) return null;
+                        if (!card) return null;
 
-                    return (
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            className="fixed bottom-10 right-10 z-[10000] w-80 bg-[#0e0e0e]/95 border border-gray-800 p-6 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)]"
-                        >
-                            <div className="relative mb-4">
-                                {/* Role Info and Divider Removed as requested */}
-                            </div>
-                            <div className="flex justify-between items-start mb-4 pb-2 border-b border-gray-800">
-                                <h3 className="text-cyan-400 font-black text-xl uppercase tracking-wider">{t(card.nameKey) || card.name}</h3>
-                                <div className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded font-mono uppercase">{t(`type_${card.type.toLowerCase()}`) || card.type}</div>
-                            </div>
-
-                            <div className="flex gap-4 items-center mb-4">
-                                <div className="text-sm text-gray-300 leading-relaxed font-light font-mono">
-                                    {card.description || t(card.descKey)}
+                        return (
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                className="fixed bottom-10 right-10 z-[10000] w-80 bg-[#0e0e0e]/95 border border-gray-800 p-6 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+                            >
+                                <div className="relative mb-4">
+                                    {/* Role Info and Divider Removed as requested */}
                                 </div>
-                            </div>
-
-                            {/* Suit/Value Badge */}
-                            <div className="flex justify-end mt-2">
-                                <div className="text-xs text-gray-500 font-mono">
-                                    {card.value === 11 ? 'J' : card.value === 12 ? 'Q' : card.value === 13 ? 'K' : card.value === 14 ? 'A' : card.value}
-                                    <span className={`ml-1 ${['hearts', 'diamonds'].includes(card.suit) ? 'text-red-500' : 'text-gray-400'}`}>
-                                        {card.suit === 'hearts' ? '♥' : card.suit === 'diamonds' ? '♦' : card.suit === 'spades' ? '♠' : '♣'}
-                                    </span>
+                                <div className="flex justify-between items-start mb-4 pb-2 border-b border-gray-800">
+                                    <h3 className="text-cyan-400 font-black text-xl uppercase tracking-wider">{t(card.nameKey) || card.name}</h3>
+                                    <div className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded font-mono uppercase">{t(`type_${card.type.toLowerCase()}`) || card.type}</div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    );
-                })()}
-            </AnimatePresence>
+
+                                <div className="flex gap-4 items-center mb-4">
+                                    <div className="text-sm text-gray-300 leading-relaxed font-light font-mono">
+                                        {card.description || t(card.descKey)}
+                                    </div>
+                                </div>
+
+                                {/* Suit/Value Badge */}
+                                <div className="flex justify-end mt-2">
+                                    <div className="text-xs text-gray-500 font-mono">
+                                        {card.value === 11 ? 'J' : card.value === 12 ? 'Q' : card.value === 13 ? 'K' : card.value === 14 ? 'A' : card.value}
+                                        <span className={`ml-1 ${['hearts', 'diamonds'].includes(card.suit) ? 'text-red-500' : 'text-gray-400'}`}>
+                                            {card.suit === 'hearts' ? '♥' : card.suit === 'diamonds' ? '♦' : card.suit === 'spades' ? '♠' : '♣'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    })()
+                }
+            </AnimatePresence >
 
             {/* Drop Zone hint */}
             {
@@ -1543,99 +1561,103 @@ export const GameBoard: React.FC = () => {
 
 
             {/* JESSE JONES DRAW MODAL */}
-            {state.currentPhase === 'jesse_jones_draw' && state.turnIndex === myPlayerIndex && (
-                <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
-                    <div className="bg-[#1a1a1a] border border-amber-500 rounded-xl p-8 max-w-2xl w-full flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(245,158,11,0.3)]">
-                        <div className="text-center">
-                            <h2 className="text-3xl font-black text-amber-500 uppercase tracking-widest mb-2">{t('jesse_jones_prompt')}</h2>
-                            <p className="text-gray-400 italic">{t('jesse_jones_desc')}</p>
-                        </div>
+            {
+                state.currentPhase === 'jesse_jones_draw' && state.turnIndex === myPlayerIndex && (
+                    <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
+                        <div className="bg-[#1a1a1a] border border-amber-500 rounded-xl p-8 max-w-2xl w-full flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(245,158,11,0.3)]">
+                            <div className="text-center">
+                                <h2 className="text-3xl font-black text-amber-500 uppercase tracking-widest mb-2">{t('jesse_jones_prompt')}</h2>
+                                <p className="text-gray-400 italic">{t('jesse_jones_desc')}</p>
+                            </div>
 
-                        <div className="flex justify-center gap-8 w-full">
-                            {/* OPTION A: DECK */}
-                            <button
-                                onClick={() => dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'deck' })}
-                                className="flex flex-col items-center gap-4 bg-gray-800 p-6 rounded-xl hover:bg-amber-900/30 border border-transparent hover:border-amber-500 transition-all hover:scale-105 group w-1/3"
-                            >
-                                <div className="w-24 h-36 bg-gray-700 rounded border border-gray-600 flex items-center justify-center shadow-lg group-hover:shadow-amber-500/20">
-                                    <div className="text-4xl text-gray-500 group-hover:text-amber-400 font-black">?</div>
-                                </div>
-                                <div className="text-xl font-bold text-white uppercase">{t('draw_deck')}</div>
-                            </button>
+                            <div className="flex justify-center gap-8 w-full">
+                                {/* OPTION A: DECK */}
+                                <button
+                                    onClick={() => dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'deck' })}
+                                    className="flex flex-col items-center gap-4 bg-gray-800 p-6 rounded-xl hover:bg-amber-900/30 border border-transparent hover:border-amber-500 transition-all hover:scale-105 group w-1/3"
+                                >
+                                    <div className="w-24 h-36 bg-gray-700 rounded border border-gray-600 flex items-center justify-center shadow-lg group-hover:shadow-amber-500/20">
+                                        <div className="text-4xl text-gray-500 group-hover:text-amber-400 font-black">?</div>
+                                    </div>
+                                    <div className="text-xl font-bold text-white uppercase">{t('draw_deck')}</div>
+                                </button>
 
-                            {/* SEPARATOR */}
-                            <div className="flex items-center text-gray-600 font-black text-2xl">OR</div>
+                                {/* SEPARATOR */}
+                                <div className="flex items-center text-gray-600 font-black text-2xl">OR</div>
 
-                            {/* OPTION B: STEAL (List Players) */}
-                            <div className="flex flex-col gap-2 w-1/3">
-                                <div className="text-center text-sm text-gray-400 font-bold uppercase mb-2">{t('steal_hand_short')}</div>
-                                <div className="flex flex-col gap-2 overflow-y-auto max-h-60 pr-1">
-                                    {opponents.filter(p => !p.isDead && p.hand.length > 0).length > 0 ? (
-                                        opponents.filter(p => !p.isDead && p.hand.length > 0).map(opp => (
-                                            <button
-                                                key={opp.id}
-                                                onClick={() => dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'player', targetId: opp.id })}
-                                                className="flex items-center justify-between bg-gray-800 hover:bg-red-900/50 p-3 rounded border border-gray-700 hover:border-red-500 transition-colors group/steal"
-                                            >
-                                                <div className="font-bold text-gray-200 group-hover/steal:text-red-300">{opp.name}</div>
-                                                <div className="text-xs text-red-500 font-mono flex items-center gap-1">
-                                                    {opp.hand.length} 🃏
-                                                </div>
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <div className="text-xs text-gray-500 italic text-center py-4">No viable targets</div>
-                                    )}
+                                {/* OPTION B: STEAL (List Players) */}
+                                <div className="flex flex-col gap-2 w-1/3">
+                                    <div className="text-center text-sm text-gray-400 font-bold uppercase mb-2">{t('steal_hand_short')}</div>
+                                    <div className="flex flex-col gap-2 overflow-y-auto max-h-60 pr-1">
+                                        {opponents.filter(p => !p.isDead && p.hand.length > 0).length > 0 ? (
+                                            opponents.filter(p => !p.isDead && p.hand.length > 0).map(opp => (
+                                                <button
+                                                    key={opp.id}
+                                                    onClick={() => dispatch({ type: 'JESSE_CHOOSE_DRAW', source: 'player', targetId: opp.id })}
+                                                    className="flex items-center justify-between bg-gray-800 hover:bg-red-900/50 p-3 rounded border border-gray-700 hover:border-red-500 transition-colors group/steal"
+                                                >
+                                                    <div className="font-bold text-gray-200 group-hover/steal:text-red-300">{opp.name}</div>
+                                                    <div className="text-xs text-red-500 font-mono flex items-center gap-1">
+                                                        {opp.hand.length} 🃏
+                                                    </div>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="text-xs text-gray-500 italic text-center py-4">No viable targets</div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* KIT CARLSON SELECTION MODAL */}
-            {state.currentPhase === 'kit_carlson_discard' && state.turnIndex === myPlayerIndex && state.kitCarlsonCards && (
-                <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
-                    <div className="bg-[#1a1a1a] border border-yellow-600 rounded-xl p-8 max-w-4xl w-full flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(234,179,8,0.3)]">
-                        <div className="text-center">
-                            <h2 className="text-3xl font-black text-yellow-500 uppercase tracking-widest mb-2">
-                                {myPlayer.name} (Kit Carlson)
-                            </h2>
-                            <p className="text-gray-400 italic text-lg">
-                                {t('kit_carlson_prompt') || "Select 1 card to RETURN to the Deck."}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
-                                {t('kit_carlson_keep') || "(You keep the other 2)"}
-                            </p>
-                        </div>
+            {
+                state.currentPhase === 'kit_carlson_discard' && state.turnIndex === myPlayerIndex && state.kitCarlsonCards && (
+                    <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto">
+                        <div className="bg-[#1a1a1a] border border-yellow-600 rounded-xl p-8 max-w-4xl w-full flex flex-col items-center gap-8 shadow-[0_0_50px_rgba(234,179,8,0.3)]">
+                            <div className="text-center">
+                                <h2 className="text-3xl font-black text-yellow-500 uppercase tracking-widest mb-2">
+                                    {myPlayer.name} (Kit Carlson)
+                                </h2>
+                                <p className="text-gray-400 italic text-lg">
+                                    {t('kit_carlson_prompt') || "Select 1 card to RETURN to the Deck."}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
+                                    {t('kit_carlson_keep') || "(You keep the other 2)"}
+                                </p>
+                            </div>
 
-                        <div className="flex justify-center gap-6 flex-wrap">
-                            {state.kitCarlsonCards.map((card) => (
-                                <div
-                                    key={card.id}
-                                    onClick={() => dispatch({ type: 'SELECT_CARD', cardId: card.id })}
-                                    className="relative group transform transition-all duration-300 hover:scale-110 cursor-pointer hover:-translate-y-4"
-                                >
-                                    <Card card={card} isSelected={false} className="w-48 h-72 shadow-lg" />
+                            <div className="flex justify-center gap-6 flex-wrap">
+                                {state.kitCarlsonCards.map((card) => (
+                                    <div
+                                        key={card.id}
+                                        onClick={() => dispatch({ type: 'SELECT_CARD', cardId: card.id })}
+                                        className="relative group transform transition-all duration-300 hover:scale-110 cursor-pointer hover:-translate-y-4"
+                                    >
+                                        <Card card={card} isSelected={false} className="w-48 h-72 shadow-lg" />
 
-                                    {/* Overlay on Hover */}
-                                    <div className="absolute inset-0 bg-yellow-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg z-10">
-                                        <span className="font-black text-white px-4 py-2 border-2 border-white rounded uppercase tracking-widest bg-black/50 backdrop-blur-sm">
-                                            {t('return_to_deck') || "RETURN"}
-                                        </span>
+                                        {/* Overlay on Hover */}
+                                        <div className="absolute inset-0 bg-yellow-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg z-10">
+                                            <span className="font-black text-white px-4 py-2 border-2 border-white rounded uppercase tracking-widest bg-black/50 backdrop-blur-sm">
+                                                {t('return_to_deck') || "RETURN"}
+                                            </span>
+                                        </div>
+
+                                        {/* TOOLTIP */}
+                                        <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-56 bg-black/95 border border-yellow-600/50 p-3 rounded-lg z-[3100] hidden group-hover:block pointer-events-none shadow-2xl">
+                                            <div className="text-yellow-500 font-bold border-b border-gray-700 pb-1 mb-1 text-center">{t(card.nameKey) || card.name}</div>
+                                            <div className="text-gray-300 text-xs italic text-center leading-relaxed">{card.description || t(card.descKey)}</div>
+                                        </div>
                                     </div>
-
-                                    {/* TOOLTIP */}
-                                    <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-56 bg-black/95 border border-yellow-600/50 p-3 rounded-lg z-[3100] hidden group-hover:block pointer-events-none shadow-2xl">
-                                        <div className="text-yellow-500 font-bold border-b border-gray-700 pb-1 mb-1 text-center">{t(card.nameKey) || card.name}</div>
-                                        <div className="text-gray-300 text-xs italic text-center leading-relaxed">{card.description || t(card.descKey)}</div>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* EQUIPMENT REPLACEMENT MODAL */}
             <AnimatePresence>
