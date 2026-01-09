@@ -76,8 +76,15 @@ io.on('connection', (socket) => {
         if (room.hostId !== socket.id) return; // Only host
         if (room.players.length >= 7) return;
 
-        const botId = `bot-${Date.now()}`;
-        room.players.push({ id: botId, name: 'Bot', isBot: true });
+        // Better ID generation
+        const botId = `bot-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        // Count existing bots for naming
+        const botCount = room.players.filter(p => p.isBot).length;
+        const botName = `Bot ${botCount + 1}`;
+
+        room.players.push({ id: botId, name: botName, isBot: true });
+
+        console.log(`[SERVER] Added bot ${botName} (${botId}) to room ${roomId}`);
 
         // Notify all
         io.to(roomId).emit('player_joined', room.players);
