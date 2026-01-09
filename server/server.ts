@@ -30,7 +30,7 @@ app.get(/.*/, (req, res) => {
 interface Room {
     id: string;
     hostId: string;
-    players: { id: string, name: string }[];
+    players: { id: string, name: string, isBot?: boolean }[];
     gameState?: any;
 }
 
@@ -44,7 +44,7 @@ io.on('connection', (socket) => {
         rooms[roomId] = {
             id: roomId,
             hostId: socket.id,
-            players: [{ id: socket.id, name: playerName }]
+            players: [{ id: socket.id, name: playerName, isBot: false }]
         };
         socket.join(roomId);
         console.log(`Room created: ${roomId} by ${playerName}`);
@@ -60,7 +60,7 @@ io.on('connection', (socket) => {
             return callback({ error: 'Room is full' });
         }
 
-        room.players.push({ id: socket.id, name: playerName });
+        room.players.push({ id: socket.id, name: playerName, isBot: false });
         socket.join(roomId);
 
         // Notify others
@@ -68,6 +68,39 @@ io.on('connection', (socket) => {
 
         console.log(`${playerName} joined room ${roomId}`);
         callback({ success: true, players: room.players });
+    });
+
+    socket.on('add_bot', ({ roomId }, callback) => {
+        const room = rooms[roomId];
+        if (!room) return;
+        if (room.hostId !== socket.id) return; // Only host
+        if (room.players.length >= 7) return;
+
+        const botId = `bot-${Date.now()}`;
+        room.players.push({ id: botId, name: 'Bot', isBot: true });
+
+        // Notify all
+        io.to(roomId).emit('player_joined', room.players);
+        callback({ success: true });
+    });
+
+    socket.on('remove_bot', ({ roomId, botIndex }, callback) => {
+        const room = rooms[roomId];
+        if (!room) return;
+        if (room.hostId !== socket.id) return;
+
+        // Validation: botIndex must be within bounds and IS A BOT
+        if (botIndex >= 0 && botIndex < room.players.length) {
+            const target = room.players[botIndex];
+            if (target.isBot) {
+                room.players.splice(botIndex, 1);
+                // Notify all (using player_joined or player_left, both work as they send full list usually, 
+                // but let's consistency emit 'player_left' or just 'player_joined' with new list.
+                // In frontend we map the list directly so 'player_joined' is fine as "Update List"
+                io.to(roomId).emit('player_joined', room.players);
+                callback({ success: true });
+            }
+        }
     });
 
     socket.on('game_action', ({ roomId, action }) => {

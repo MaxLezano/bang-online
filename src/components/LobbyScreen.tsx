@@ -57,7 +57,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, o
             console.log('Player joined update:', players);
             const mapped = players.map(p => ({
                 name: p.name,
-                isBot: false,
+                isBot: p.isBot || false,
                 id: p.id
             }));
             setParticipants(mapped);
@@ -72,6 +72,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, o
         socket.on('disconnect', onDisconnect);
         socket.on('connect_error', onConnectError);
         socket.on('player_joined', onPlayerJoined);
+        socket.on('player_left', onPlayerJoined);
         socket.on('game_started', onGameStarted);
 
         return () => {
@@ -79,6 +80,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, o
             socket.off('disconnect', onDisconnect);
             socket.off('connect_error', onConnectError);
             socket.off('player_joined', onPlayerJoined);
+            socket.off('player_left', onPlayerJoined);
             socket.off('game_started', onGameStarted);
         };
     }, [socket, onStartGame, isHost]);
@@ -130,7 +132,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, o
                 // Update participants
                 if (socket.id) setMyId(socket.id);
                 if (response.players) {
-                    setParticipants(response.players.map((p: any) => ({ name: p.name, isBot: false, id: p.id })));
+                    setParticipants(response.players.map((p: any) => ({ name: p.name, isBot: p.isBot || false, id: p.id })));
                 }
             }
         });
@@ -143,26 +145,16 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, o
     };
 
     const addBot = () => {
-        if (!isHost) return;
+        if (!isHost || !socket) return;
         if (participants.length < MAX_PLAYERS) {
-            // Local bot addition? 
-            // In MP, bots must be known to server?
-            // For now, let's say Host adds bots locally, BUT server needs to know count?
-            // Server implementation didn't explicitly handle bots in the user list.
-            // Simpler: Just add a "Bot" placeholder locally, and when Starting Game, send botCount.
-            setParticipants([...participants, { name: 'Bot', isBot: true }]);
+            socket.emit('add_bot', { roomId: roomCode });
         }
     };
 
     const removeBot = (index: number) => {
-        if (!isHost) return;
-        if (index === 0) return; // Cant remove self (host) - though index 0 might not be host in list if unsorted
-        const p = participants[index];
-        if (!p.isBot) return; // Can't kick real players yet (server logic needed)
-
-        const newParticipants = [...participants];
-        newParticipants.splice(index, 1);
-        setParticipants(newParticipants);
+        if (!isHost || !socket) return;
+        // Server validates if it's a bot
+        socket.emit('remove_bot', { roomId: roomCode, botIndex: index });
     };
 
     const handleStart = () => {
