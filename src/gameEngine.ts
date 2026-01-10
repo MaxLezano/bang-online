@@ -107,6 +107,7 @@ const generateDeck = (): Card[] => {
     add(2, { nameKey: 'card_barrel_name', descKey: 'card_barrel_desc', name: 'Barrel', type: 'Equipment', subType: 'Defense', effectType: 'equip' }, ['spades'], [12, 13]);
     // Alijo (Hideout) - Custom Card
     add(2, { nameKey: 'card_alijo_name', descKey: 'card_alijo_desc', name: 'Alijo', type: 'Equipment', subType: 'Utility', effectType: 'hideout' }, ['clubs', 'spades'], [13, 9]);
+
     add(3, { nameKey: 'card_jail_name', descKey: 'card_jail_desc', name: 'Jail', type: 'Status', effectType: 'jail' }, ['spades', 'hearts'], [10, 11, 4]);
     add(1, { nameKey: 'card_dynamite_name', descKey: 'card_dynamite_desc', name: 'Dynamite', type: 'Status', effectType: 'dynamite' }, ['hearts'], [2]);
 
@@ -354,6 +355,8 @@ export function handleDeath(
     let newLogs = [...state.logs];
 
     const victim = newPlayers[victimIndex];
+    if (victim.isDead) return { players: newPlayers, deck: newDeck, discardPile: newDiscard, logs: newLogs };
+
     victim.isDead = true;
     victim.hp = 0;
     newLogs.push(`💀 ${victim.name} ELIMINATED! (${victim.role})`);

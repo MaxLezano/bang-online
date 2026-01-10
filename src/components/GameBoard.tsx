@@ -1857,7 +1857,7 @@ export const GameBoard: React.FC = () => {
             </AnimatePresence>
             {/* DEATH SCREEN OVERLAY */}
             <AnimatePresence>
-                {myPlayer && myPlayer.isDead && !dismissedDeathScreen && (
+                {myPlayer && myPlayer.isDead && !dismissedDeathScreen && !state.gameOver && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -1882,7 +1882,7 @@ export const GameBoard: React.FC = () => {
 
                             {/* Role Reveal */}
                             <div className="flex flex-col items-center gap-4 mb-12">
-                                <div className="text-yellow-500 font-bold tracking-widest uppercase text-sm mb-2">{t('your_role')}</div>
+                                <div className="text-yellow-500 font-bold tracking-widest uppercase text-sm mb-2">{t('role_card')}</div>
                                 <div className="relative group">
                                     <img
                                         src={`/cards/role_${myPlayer.role.toLowerCase()}.webp`}
@@ -1927,11 +1927,32 @@ export const GameBoard: React.FC = () => {
                             initial={{ scale: 0.8 }}
                             animate={{ scale: 1 }}
                             transition={{ delay: 0.5, type: "spring" }}
-                            className="mt-4 text-5xl md:text-7xl font-black text-white uppercase tracking-widest drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                            className="mt-4 text-5xl md:text-7xl font-black text-white uppercase tracking-widest drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] flex flex-col items-center gap-4"
                         >
-                            {state.winner === 'Sheriff' && (t('role_sheriff') + " & " + t('role_deputy'))}
-                            {state.winner === 'Outlaws' && t('role_outlaws')}
-                            {state.winner === 'Renegade' && t('role_renegade')}
+                            {state.winner === 'Sheriff' && (
+                                <>
+                                    <div className="text-yellow-500">{t('role_sheriff')} & {t('role_deputy')}</div>
+                                    <div className="text-2xl text-gray-300 font-bold mt-2">
+                                        {state.players.filter(p => p.role === 'Sheriff' || p.role === 'Deputy').map(p => p.name).join(', ')}
+                                    </div>
+                                </>
+                            )}
+                            {state.winner === 'Outlaws' && (
+                                <>
+                                    <div className="text-red-500">{t('role_outlaws')}</div>
+                                    <div className="text-2xl text-gray-300 font-bold mt-2">
+                                        {state.players.filter(p => p.role === 'Outlaw').map(p => p.name).join(', ')}
+                                    </div>
+                                </>
+                            )}
+                            {state.winner === 'Renegade' && (
+                                <>
+                                    <div className="text-purple-500">{t('role_renegade')}</div>
+                                    <div className="text-2xl text-gray-300 font-bold mt-2">
+                                        {state.players.filter(p => p.role === 'Renegade').map(p => p.name).join(', ')}
+                                    </div>
+                                </>
+                            )}
                         </motion.div>
 
                         <button
