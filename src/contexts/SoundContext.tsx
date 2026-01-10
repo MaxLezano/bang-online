@@ -41,8 +41,9 @@ export const SoundProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (muted) return;
 
         try {
-            const audio = getAudio(sound);
-            audio.currentTime = 0;
+            const baseAudio = getAudio(sound);
+            // Clone node to allow overlapping sounds (e.g. rapid fire)
+            const audio = baseAudio.cloneNode() as HTMLAudioElement;
             audio.volume = volume;
             audio.play().catch(e => {
                 // Ignore errors if file doesn't exist or user hasn't interacted yet
