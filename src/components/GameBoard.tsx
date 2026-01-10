@@ -1401,8 +1401,8 @@ export const GameBoard: React.FC = () => {
                                     </div>
 
                                     <div className="flex gap-4 relative z-10">
-                                        {/* BARREL BUTTON - Cannot use against Indians */}
-                                        {hasBarrel && !barrelUsed && state.pendingAction?.type !== 'indians' && (
+                                        {/* BARREL BUTTON - Cannot use against Indians or Duel */}
+                                        {hasBarrel && !barrelUsed && state.pendingAction?.type !== 'indians' && state.pendingAction?.type !== 'duel' && (
                                             <button
                                                 onClick={() => dispatch({ type: 'RESPOND', responseType: 'barrel' })}
                                                 className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 active:scale-95 transition-all text-xl uppercase tracking-wider flex items-center gap-2"
