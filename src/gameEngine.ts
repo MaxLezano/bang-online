@@ -1209,68 +1209,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
             } else {
                 // ACTION CARDS
-                if (card.effectType === 'duel' && action.targetId) {
-                    const targetIndex = newPlayers.findIndex(p => p.id === action.targetId);
-                    const target = newPlayers[targetIndex];
 
-                    const attackerBangs = newPlayers[playerIndex].hand.filter(c => c.effectType === 'bang').length;
-                    const targetBangs = target.hand.filter(c => c.effectType === 'bang').length;
-
-                    // Duel Logic: Target discards first. Then Attacker. Repeat.
-                    const loserIsAttacker = (targetBangs > attackerBangs);
-
-                    const targetDiscards = loserIsAttacker ? attackerBangs + 1 : targetBangs;
-                    const attackerDiscards = loserIsAttacker ? attackerBangs : targetBangs;
-
-                    const discardBangs = (p: Player, count: number) => {
-                        let removed = 0;
-                        for (let i = 0; i < p.hand.length && removed < count; i++) {
-                            if (p.hand[i].effectType === 'bang') {
-                                newDiscard.push(p.hand[i]);
-                                p.hand.splice(i, 1);
-                                i--;
-                                removed++;
-                            }
-                        }
-                    };
-
-                    discardBangs(newPlayers[playerIndex], attackerDiscards);
-                    discardBangs(newPlayers[targetIndex], targetDiscards);
-
-                    const loserIdx = loserIsAttacker ? playerIndex : targetIndex;
-                    const loser = newPlayers[loserIdx];
-
-                    newLog += ` -> Duel! ${loser.name} lost (${targetDiscards + attackerDiscards} Bangs used)`;
-
-                    // HANDLE DAMAGE
-                    const damageRes = handleDamage(
-                        { ...state, players: newPlayers },
-                        loserIdx,
-                        1,
-                        loserIsAttacker ? targetIndex : playerIndex, // Attacker is the winner
-                        updatedDeck,
-                        newDiscard,
-                        [...state.logs, newLog]
-                    );
-                    newPlayers = damageRes.players;
-                    updatedDeck = damageRes.deck;
-                    newDiscard = damageRes.discardPile;
-                    const finalLogs = damageRes.logs;
-
-                    newPlayers[playerIndex].hand = newPlayers[playerIndex].hand.filter(c => c.id !== card.id);
-                    newDiscard.push(card);
-
-                    return {
-                        ...state,
-                        players: newPlayers,
-                        deck: updatedDeck,
-                        discardPile: newDiscard,
-                        logs: finalLogs,
-                        selectedCardId: null,
-                        hasPlayedBang: state.hasPlayedBang,
-                        turnPlayedCards: [...(state.turnPlayedCards || []), card]
-                    };
-                }
 
                 if ((card.effectType === 'bang' || (card.effectType === 'missed' && player.character === 'Calamity Janet')) && action.targetId) {
                     // Anti-Double-Dispatch Guard: Ensure the card played is actually the selected one

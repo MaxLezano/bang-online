@@ -139,13 +139,15 @@ export const GameBoard: React.FC = () => {
             const pending = state.pendingAction;
             if (pending) {
                 const isIndians = pending.type === 'indians';
-                const requiredEffect = isIndians ? 'bang' : 'missed';
+                const isDuel = pending.type === 'duel';
+                const requiredEffect = (isIndians || isDuel) ? 'bang' : 'missed';
 
                 // Allow Calamity Janet Swap
                 const isValidDefense = card.effectType === requiredEffect ||
                     (myPlayer.character === 'Calamity Janet' && (card.effectType === 'bang' || card.effectType === 'missed'));
 
                 if (isValidDefense) {
+                    if (!isIndians) playSound('missed');
                     dispatch({ type: 'RESPOND', responseType: 'card', cardId });
                 } else {
                     // Custom Feedback Modal (Warning)
@@ -1302,7 +1304,8 @@ export const GameBoard: React.FC = () => {
                                         // CRITICAL: Check if *I* am the target, not if it's my turn
                                         if (state.currentPhase === 'responding' && state.pendingAction && state.pendingAction.targetId === myPlayer.id) {
                                             const isIndians = state.pendingAction.type === 'indians';
-                                            const requiredEffect = isIndians ? 'bang' : 'missed';
+                                            const isDuel = state.pendingAction.type === 'duel';
+                                            const requiredEffect = (isIndians || isDuel) ? 'bang' : 'missed';
                                             isValidDefense = card.effectType === requiredEffect || (myPlayer.character === 'Calamity Janet' && (card.effectType === 'bang' || card.effectType === 'missed'));
                                         }
 
@@ -1420,7 +1423,8 @@ export const GameBoard: React.FC = () => {
                                     {(() => {
                                         // Check if user has ANY valid defense card
                                         const isIndians = state.pendingAction?.type === 'indians';
-                                        const requiredEffect = isIndians ? 'bang' : 'missed';
+                                        const isDuel = state.pendingAction?.type === 'duel';
+                                        const requiredEffect = (isIndians || isDuel) ? 'bang' : 'missed';
                                         const canPlayCard = myPlayer.hand.some(c =>
                                             c.effectType === requiredEffect ||
                                             (myPlayer.character === 'Calamity Janet' && (c.effectType === 'bang' || c.effectType === 'missed'))
@@ -1431,7 +1435,7 @@ export const GameBoard: React.FC = () => {
                                                 ? 'text-red-200/80 bg-black/40 border-red-500/30'
                                                 : 'text-gray-500 bg-black/20 border-gray-700/30 cursor-not-allowed pointer-events-none opacity-50'
                                                 }`}>
-                                                {isIndians
+                                                {isIndians || state.pendingAction?.type === 'duel'
                                                     ? (t('play_bang_hint') || "Select a BANG! card to fight back!")
                                                     : (t('play_missed_hint') || "Select a Missed! card to dodge")
                                                 }
