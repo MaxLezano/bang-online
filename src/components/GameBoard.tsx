@@ -4,10 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { calculateDistance } from '../gameEngine';
+import { useSound } from '../contexts/SoundContext';
 
 export const GameBoard: React.FC = () => {
     const { state, dispatch, myId } = useGame();
     const { t } = useTranslation();
+    const { playSound } = useSound();
 
     // Inject custom styles for heartbeat
     React.useEffect(() => {
@@ -73,6 +75,40 @@ export const GameBoard: React.FC = () => {
 
     // NEW: Death Screen State
     const [dismissedDeathScreen, setDismissedDeathScreen] = React.useState(false);
+
+    // --- SOUND EFFECTS ---
+    React.useEffect(() => {
+        if (!state.gameOver && state.turnIndex === myPlayerIndex) {
+            playSound('turn_start');
+        }
+    }, [state.turnIndex, myPlayerIndex, state.currentPhase, state.gameOver]);
+
+    React.useEffect(() => {
+        if (state.currentPhase === 'draw') playSound('draw');
+        // if (state.currentPhase === 'discard') playSound('click'); 
+    }, [state.currentPhase]);
+
+    React.useEffect(() => {
+        if (state.gameOver) {
+            const isWinner = (state.winner === 'Sheriff' && (myPlayer?.role === 'Sheriff' || myPlayer?.role === 'Deputy')) ||
+                (state.winner === 'Outlaws' && myPlayer?.role === 'Outlaw') ||
+                (state.winner === 'Renegade' && myPlayer?.role === 'Renegade');
+
+            playSound(isWinner ? 'win' : 'lose');
+        }
+    }, [state.gameOver, state.winner]);
+
+    const prevHpRef = React.useRef(myPlayer?.hp);
+    React.useEffect(() => {
+        if (myPlayer && prevHpRef.current !== undefined) {
+            if (myPlayer.hp < prevHpRef.current) {
+                playSound('bang'); // Generic hit sound
+            } else if (myPlayer.hp > prevHpRef.current) {
+                playSound('beer');
+            }
+        }
+        prevHpRef.current = myPlayer?.hp;
+    }, [myPlayer?.hp]);
 
 
 
@@ -152,6 +188,7 @@ export const GameBoard: React.FC = () => {
                         existingCards: [currentWeapon]
                     });
                 } else {
+                    playSound('equip');
                     dispatch({ type: 'PLAY_CARD', cardId: card.id, targetId: myPlayer.id });
                 }
                 return;
@@ -179,6 +216,7 @@ export const GameBoard: React.FC = () => {
                     existingCards: gears
                 });
             } else {
+                playSound('equip');
                 dispatch({ type: 'PLAY_CARD', cardId: card.id, targetId: myPlayer.id });
             }
             return;
@@ -190,6 +228,11 @@ export const GameBoard: React.FC = () => {
         // Beer: technically can be "Targeted? No, self heal".
         const immediateEffects = ['indians', 'saloon', 'general_store', 'store', 'damage_all', 'heal', 'draw'];
         if (immediateEffects.includes(card.effectType)) {
+            if (card.effectType === 'heal' || card.effectType === 'saloon') playSound('beer');
+            else if (card.effectType === 'indians' || card.effectType === 'damage_all') playSound('bang'); // Or distinct sound?
+            else if (card.effectType === 'general_store' || card.effectType === 'store') playSound('draw');
+            else playSound('playing');
+
             dispatch({ type: 'PLAY_CARD', cardId: card.id, targetId: myPlayer.id });
             return;
         }
@@ -219,8 +262,10 @@ export const GameBoard: React.FC = () => {
         // 3. TARGETED CARDS (Bang, Panic, Cat Balou, Jail, Duel)
         // Standard Select -> Click Target behavior
         if (state.selectedCardId === cardId) {
+            playSound('click');
             dispatch({ type: 'SELECT_CARD', cardId: null });
         } else {
+            playSound('click');
             dispatch({ type: 'SELECT_CARD', cardId });
         }
     };
@@ -240,6 +285,11 @@ export const GameBoard: React.FC = () => {
                     return;
                 }
             }
+
+            if (card?.name === 'Bang!' || card?.effectType === 'bang' || card?.name === 'Gatling') playSound('bang');
+            else if (card?.name === 'Jail') playSound('jail');
+            else if (card?.name === 'Panic!') playSound('draw');
+            else playSound('playing');
 
             dispatch({ type: 'PLAY_CARD', cardId: state.selectedCardId, targetId });
         }

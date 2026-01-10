@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Socket } from 'socket.io-client';
 import { GameSettings } from '../types';
+import { useSound } from '../contexts/SoundContext';
 
 interface LobbyScreenProps {
     socket: Socket | null;
@@ -12,8 +13,23 @@ interface LobbyScreenProps {
 
 export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, onBack }) => {
     const { t } = useTranslation();
+    const { playSound } = useSound();
     const [view, setView] = useState<'MAIN' | 'CREATE' | 'JOIN'>('MAIN');
     const [name, setName] = useState('');
+
+    // ... (rest of state)
+
+
+
+    // ... (rest of logic) ... we will skip re-writing logic and just update button clicks inline later?
+    // Actually, declaring `withSound` is useful, but since we are doing Replacements, maybe just inline playSound('click') is safer to avoid rewriting huge chunks.
+
+    // Changing strategy: Only injecting hook here, will inject clicks individually.
+    // Wait, the ReplacementContent must validly replace the TargetContent. 
+    // I can't leave comment blocks.
+
+    // Let's just add the hook first.
+
 
     // Multiplayer State (Managed by Parent)
     const [roomCode, setRoomCode] = useState('');
@@ -207,14 +223,14 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, o
 
                 <div className="flex gap-4 w-full">
                     <button
-                        onClick={() => setView('JOIN')}
+                        onClick={() => { playSound('click'); setView('JOIN'); }}
                         disabled={!name.trim()}
                         className="flex-1 py-4 rounded-sm bg-gray-900/80 border border-amber-800/50 hover:border-amber-500 text-amber-500 hover:text-amber-200 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
                     >
                         {t('join_lobby')}
                     </button>
                     <button
-                        onClick={handleCreateLobby}
+                        onClick={() => { playSound('click'); handleCreateLobby(); }}
                         disabled={!name.trim() || isConnecting}
                         className={`flex-1 py-4 rounded-sm bg-gradient-to-r from-amber-700 to-yellow-600 hover:from-amber-600 hover:to-yellow-500 border border-amber-400/50 text-white font-bold transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider ${!isConnecting && 'hover:scale-105 active:scale-95'}`}
                     >
@@ -223,7 +239,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({ socket, onStartGame, o
                     {joinError && <div className="absolute top-full mt-2 text-red-500 font-bold text-sm bg-black/80 p-2 rounded w-full text-center">{joinError}</div>}
                 </div>
 
-                <button onClick={onBack} className="text-amber-700 hover:text-amber-500 text-sm mt-4 uppercase tracking-widest font-bold">
+                <button onClick={() => { playSound('click'); onBack(); }} className="text-amber-700 hover:text-amber-500 text-sm mt-4 uppercase tracking-widest font-bold">
                     {t('back')}
                 </button>
             </div>
