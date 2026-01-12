@@ -353,6 +353,7 @@ i18n
                     use_barrel: "Usar Barril",
                     take_damage: "Recibir Daño",
                     play_missed_hint: "Elige carta Fallaste! para esquivar",
+                    play_bang_hint: "¡Descarta una carta BANG! para escapar!",
                     must_play_missed: "¡Debes jugar una carta Fallaste!",
 
                     discard_pile: "Pila de Descartes",

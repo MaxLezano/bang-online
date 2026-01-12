@@ -283,12 +283,13 @@ const GameLayout: React.FC<{ settings: GameSettings; socket: any }> = ({ setting
                 if (targetPlayer && targetPlayer.isBot && !targetPlayer.isDead) { // Only run for BOT targets
                     const timer = setTimeout(() => {
                         const isIndians = state.pendingAction?.type === 'indians';
-                        const hasBarrel = (targetPlayer.table.some(c => c.name === 'Barrel') || targetPlayer.character === 'Jourdonnais') && !isIndians;
+                        const isDuel = state.pendingAction?.type === 'duel';
+                        const hasBarrel = (targetPlayer.table.some(c => c.name === 'Barrel') || targetPlayer.character === 'Jourdonnais') && !isIndians && !isDuel;
                         if (hasBarrel && !state.pendingAction?.barrelUsed) {
                             dispatch({ type: 'RESPOND', responseType: 'barrel' });
                             return;
                         }
-                        const requiredEffect = isIndians ? 'bang' : 'missed';
+                        const requiredEffect = (isIndians || isDuel) ? 'bang' : 'missed';
                         const defenseCard = targetPlayer.hand.find(c => c.effectType === requiredEffect);
                         const calamityCard = targetPlayer.character === 'Calamity Janet' ? targetPlayer.hand.find(c => c.effectType === (isIndians ? 'missed' : 'bang')) : null;
                         const cardToPlay = defenseCard || calamityCard;
